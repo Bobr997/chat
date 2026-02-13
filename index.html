@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Elite V4</title>
+    <title>Cloud Elite PRO</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -16,68 +16,78 @@
         .header { background: var(--main); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 60px; z-index: 10; }
         .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; border: 1px solid #fff; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; display: flex; flex-direction: column; gap: 8px; }
-        
-        /* Стили сообщений */
         .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 16px; position: relative; box-shadow: 0 1px 2px #0002; }
         .my { align-self: flex-end; background: #efffde; border-bottom-right-radius: 2px; }
         .other { align-self: flex-start; background: white; border-bottom-left-radius: 2px; }
-        
-        /* Цитата внутри сообщения */
-        .reply-in-msg { font-size: 12px; background: rgba(0,0,0,0.05); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 5px; border-radius: 4px; color: #555; display: block; }
-        
-        /* Превью ответа над инпутом */
-        #reply-preview-bar { background: #f9f9f9; padding: 8px 15px; border-left: 5px solid var(--main); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #eee; }
-        
-        .input-bar { padding: 10px; display: flex; gap: 10px; background: white; align-items: center; padding-bottom: 25px; }
+        .reply-in-msg { font-size: 12px; background: rgba(0,0,0,0.07); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 5px; border-radius: 4px; display: block; color: #555; }
+        #reply-preview-bar { background: #f9f9f9; padding: 10px 15px; border-left: 5px solid var(--main); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #eee; }
+        .input-bar { padding: 10px; display: flex; gap: 12px; background: white; align-items: center; padding-bottom: 30px; }
         input { border: none; padding: 12px; background: #f0f0f5; border-radius: 20px; flex: 1; font-size: 16px; outline: none; }
-        
         #action-sheet { position: fixed; bottom: 0; width: 100%; background: white; padding: 20px; transform: translateY(100%); transition: 0.3s; z-index: 1000; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 25px #0004; }
         #action-sheet.open { transform: translateY(0); }
-        .react-tag { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; border: 1px solid #ddd; }
         .sheet-btn { text-align: center; padding: 15px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #eee; font-size: 17px; }
+        .react-tag { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
-<div id="scr-chat" class="screen">
+<div id="scr-list" class="screen">
     <div class="header">
-        <div style="font-size:24px">‹</div>
-        <img id="head-avatar" class="avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png">
+        <div onclick="toggleSets()" style="cursor:pointer; font-size:20px">☰</div>
+        <b style="flex:1; text-align:center">Чаты</b>
+    </div>
+    <div id="chat-list" style="overflow-y:auto; flex:1"></div>
+</div>
+
+<div id="scr-chat" class="screen hidden">
+    <div class="header">
+        <div onclick="backToList()" style="cursor:pointer; font-size:26px">‹</div>
+        <img id="head-avatar" class="avatar">
         <div style="flex:1">
-            <b id="head-name">Kilik</b><br>
-            <small id="head-status" style="font-size:11px">в сети</small>
+            <b id="head-name">...</b><br>
+            <small id="head-status" style="font-size:11px; opacity:0.9">загрузка...</small>
         </div>
     </div>
-    
     <div id="messages"></div>
-
     <div id="reply-preview-bar" class="hidden">
         <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px;">
             <b style="color:var(--main)">Ответ</b><br>
-            <span id="reply-text-label" style="color:#666">Текст сообщения...</span>
+            <span id="reply-text-label" style="color:#666">...</span>
         </div>
         <div onclick="cancelReply()" style="font-size: 20px; cursor: pointer; padding: 5px">✕</div>
     </div>
-
     <div class="input-bar">
         <label style="cursor:pointer; font-size:26px">📸<input type="file" id="f-img" hidden onchange="uploadImg(this)"></label>
         <input type="text" id="msg-input" placeholder="Сообщение...">
-        <button onclick="sendMsg()" style="border:none; background:none; font-size:26px">🚀</button>
+        <button onclick="sendMsg()" style="border:none; background:none; font-size:28px">🚀</button>
     </div>
+</div>
+
+<div id="scr-sets" class="screen hidden" style="padding:25px">
+    <div onclick="toggleSets()" style="font-size:30px; cursor:pointer">✕</div>
+    <div style="text-align:center; margin:20px 0">
+        <label>
+            <img id="my-preview" class="avatar" style="width:80px; height:80px">
+            <input type="file" hidden onchange="uploadAvatar(this)">
+            <p style="color:var(--main); font-size:12px; margin-top:5px">Сменить фото</p>
+        </label>
+    </div>
+    <input type="text" id="set-name" placeholder="Имя" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px">
+    <input type="text" id="set-user" placeholder="Юзернейм (@)" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd">
+    <button onclick="saveProfile()" id="btn-save" style="width:100%; padding:15px; background:var(--main); color:white; border:none; border-radius:12px; font-weight:bold; margin-top:15px">Сохранить</button>
+    <button onclick="auth.signOut()" style="width:100%; padding:12px; color:red; border:none; background:none; margin-top:10px">Выйти</button>
 </div>
 
 <div id="action-sheet">
     <div style="display:flex; justify-content:space-around; margin-bottom:15px; font-size:30px">
         <span onclick="addReact('👍')">👍</span><span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('🔥')">🔥</span>
     </div>
-    
     <div class="sheet-btn" style="color: var(--main);" onclick="initReply()">Ответить</div>
-    <div class="sheet-btn" style="color: #ff3b30;" onclick="deleteMsg()">Удалить сообщение</div>
-    <div class="sheet-btn" style="color: #999; border:none" onclick="closeActions()">Отмена</div>
+    <div class="sheet-btn" style="color: red;" onclick="deleteMsg()">Удалить</div>
+    <div class="sheet-btn" style="border:none; color:gray" onclick="closeActions()">Отмена</div>
 </div>
 
 <script>
-    // ТВОИ ДАННЫЕ FIREBASE (Оставил заглушки, подставь свои из консоли если это новый файл)
     const firebaseConfig = {
         apiKey: "AIzaSyCuDXnXksaxGp_-Oml82uuymgXNRDRS37Y",
         authDomain: "mymessenger-2b9d0.firebaseapp.com",
@@ -89,83 +99,106 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth(), db = firebase.firestore();
 
-    let activeChatId = "test_chat"; // Замени на свою логику выбора чата
-    let selectedDoc = null;
-    let replyData = null; // Тут храним текст для ответа
+    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, replyData = null;
 
-    // Логика отображения сообщений (с поддержкой цитат)
-    function renderMsgs() {
-        // У тебя тут onSnapshot из Firebase. Важно добавить проверку m.replyText
-        db.collection("chats").doc(activeChatId).collection("messages").orderBy("time","asc").onSnapshot(s => {
+    auth.onAuthStateChanged(user => {
+        if(user) {
+            db.collection("users").doc(user.uid).set({online: true}, {merge: true});
+            loadUserList();
+            loadMyData();
+        } else { location.reload(); }
+    });
+
+    async function loadMyData() {
+        const d = await db.collection("users").doc(auth.currentUser.uid).get();
+        if(d.exists) {
+            document.getElementById('set-name').value = d.data().displayName || "";
+            document.getElementById('set-user').value = d.data().username || "jdhd7dhxhzgd";
+            document.getElementById('my-preview').src = d.data().avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+        }
+    }
+
+    async function loadUserList() {
+        const snap = await db.collection("users").get();
+        const box = document.getElementById('chat-list'); box.innerHTML = "";
+        snap.forEach(doc => {
+            if(doc.id !== auth.currentUser.uid) {
+                const u = doc.data();
+                const item = document.createElement('div');
+                item.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
+                item.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar">
+                                  <div style="margin-left:12px"><b>${u.displayName || u.username}</b><br><small style="color:${u.online?'green':'gray'}">${u.online?'в сети':'не в сети'}</small></div>`;
+                item.onclick = () => openChat(doc.id, u);
+                box.appendChild(item);
+            }
+        });
+    }
+
+    function openChat(uid, u) {
+        activeChatId = [auth.currentUser.uid, uid].sort().join("_");
+        document.getElementById('head-name').innerText = u.displayName || u.username;
+        document.getElementById('head-avatar').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+        document.getElementById('scr-chat').classList.remove('hidden');
+        
+        if(unsubStatus) unsubStatus();
+        unsubStatus = db.collection("users").doc(uid).onSnapshot(d => {
+            document.getElementById('head-status').innerText = d.data().online ? "в сети" : "был недавно";
+            document.getElementById('head-status').style.color = d.data().online ? "#34eb46" : "white";
+        });
+
+        if(unsubMsgs) unsubMsgs();
+        unsubMsgs = db.collection("chats").doc(activeChatId).collection("messages").orderBy("time","asc").onSnapshot(s => {
             const box = document.getElementById('messages'); box.innerHTML = "";
-            s.forEach(d => {
-                const m = d.data();
+            s.forEach(doc => {
+                const m = doc.data();
                 const c = document.createElement('div');
-                c.className = "msg " + (m.sender === auth.currentUser?.uid ? "my" : "other");
-                
-                let content = "";
-                // Если есть ответ на сообщение
-                if(m.replyText) {
-                    content += `<span class="reply-in-msg"><b>Ответ:</b> ${m.replyText}</span>`;
-                }
-                
-                if(m.type === 'img') content += `<img src="${m.url}" style="max-width:100%; border-radius:10px">`;
-                else content += m.text;
-                
-                if(m.re) content += `<div class="react-tag">${m.re}</div>`;
-                
-                c.innerHTML = content;
-                c.onclick = () => { selectedDoc = d; document.getElementById('action-sheet').classList.add('open'); };
+                c.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
+                let html = "";
+                if(m.replyText) html += `<span class="reply-in-msg"><b>Ответ:</b> ${m.replyText}</span>`;
+                html += m.type === 'img' ? `<img src="${m.url}" style="max-width:100%; border-radius:10px">` : m.text;
+                if(m.re) html += `<div class="react-tag">${m.re}</div>`;
+                c.innerHTML = html;
+                c.onclick = () => { selectedDoc = doc; document.getElementById('action-sheet').classList.add('open'); };
                 box.appendChild(c);
             });
             box.scrollTop = box.scrollHeight;
         });
     }
 
-    // Включаем режим ответа
     function initReply() {
         const data = selectedDoc.data();
         replyData = data.type === 'img' ? "Фотография" : data.text;
-        
         document.getElementById('reply-text-label').innerText = replyData;
         document.getElementById('reply-preview-bar').classList.remove('hidden');
         closeActions();
-        document.getElementById('msg-input').focus();
     }
 
-    // Отмена ответа
-    function cancelReply() {
-        replyData = null;
-        document.getElementById('reply-preview-bar').classList.add('hidden');
-    }
+    function cancelReply() { replyData = null; document.getElementById('reply-preview-bar').classList.add('hidden'); }
 
-    // Отправка (с привязкой ответа)
     async function sendMsg() {
-        const text = document.getElementById('msg-input').value;
-        if(!text && !replyData) return;
-
-        const payload = {
-            sender: auth.currentUser.uid,
-            text: text,
-            time: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        if(replyData) {
-            payload.replyText = replyData;
-            cancelReply();
-        }
-
-        await db.collection("chats").doc(activeChatId).collection("messages").add(payload);
+        const txt = document.getElementById('msg-input').value; if(!txt && !replyData) return;
+        const p = { sender: auth.currentUser.uid, text: txt, time: firebase.firestore.FieldValue.serverTimestamp() };
+        if(replyData) { p.replyText = replyData; cancelReply(); }
+        await db.collection("chats").doc(activeChatId).collection("messages").add(p);
         document.getElementById('msg-input').value = "";
     }
 
-    // Остальные функции
+    async function saveProfile() {
+        const u = document.getElementById('set-user').value.trim().toLowerCase();
+        const n = document.getElementById('set-name').value.trim();
+        const snap = await db.collection("users").where("username", "==", u).get();
+        let taken = false;
+        snap.forEach(d => { if(d.id !== auth.currentUser.uid) taken = true; });
+        if(taken) return alert("Этот ник уже занят!");
+        await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge:true});
+        alert("Успешно!"); toggleSets(); loadUserList();
+    }
+
+    function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
     function closeActions() { document.getElementById('action-sheet').classList.remove('open'); }
     async function addReact(r) { await selectedDoc.ref.update({re: r}); closeActions(); }
     async function deleteMsg() { if(confirm("Удалить?")) await selectedDoc.ref.delete(); closeActions(); }
-    
-    // Инициализация при входе
-    auth.onAuthStateChanged(user => { if(user) renderMsgs(); });
+    function backToList() { document.getElementById('scr-chat').classList.add('hidden'); }
 </script>
 </body>
 </html>
