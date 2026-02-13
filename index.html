@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Pro Max Ultra Full</title>
+    <title>Telegram Ultra Full Pro</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -45,11 +45,8 @@
         #action-sheet.open { transform: translateY(0); }
         .sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 240; display: none; }
         .sheet-overlay.show { display: block; }
-        .reactions-row { display: flex; justify-content: space-around; margin-bottom: 15px; font-size: 26px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .sheet-btn { padding: 12px; font-size: 16px; cursor: pointer; border-radius: 10px; display: flex; align-items: center; gap: 10px; }
 
         /* Ввод */
-        .input-area { background: white; padding: 10px; border-top: 1px solid #ddd; }
         input, textarea { border: none; outline: none; padding: 12px; background: #f1f1f1; border-radius: 12px; width: 100%; font-size: 16px; }
         .btn-main { background: var(--main); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 5px; }
         .reply-preview-bar { background: white; padding: 8px 15px; border-top: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--main); }
@@ -74,26 +71,26 @@
                 <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:110px; height:110px; border-radius:50%; object-fit:cover; border:3px solid var(--main); cursor:pointer;">
                 <input type="file" id="avatar-file" hidden onchange="updateAvatar(this)">
             </label>
-            <label>Ваше Имя (Ник):</label>
+            <label>Ваш Ник (как вас видят):</label>
             <input type="text" id="set-display-name">
             <label>Юзернейм (@):</label>
             <input type="text" id="set-username" placeholder="Только a-z, 0-9, _">
             <label>О себе:</label>
             <textarea id="set-bio" rows="2"></textarea>
-            <button onclick="saveProfile()" class="btn-main">Сохранить</button>
+            <button onclick="saveProfile()" class="btn-main">Сохранить изменения</button>
             <button onclick="auth.signOut()" class="btn-main" style="background:#ff4d4d; margin-top:5px;">Выйти</button>
         </div>
 
         <div id="overlay" class="sheet-overlay" onclick="closeActionMenu()"></div>
         
         <div id="action-sheet">
-            <div class="reactions-row">
+            <div style="display: flex; justify-content: space-around; margin-bottom: 15px; font-size: 26px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
                 <span onclick="setReaction('👍')">👍</span> <span onclick="setReaction('❤️')">❤️</span> <span onclick="setReaction('🔥')">🔥</span> <span onclick="setReaction('😂')">😂</span> <span onclick="setReaction('😮')">😮</span>
             </div>
-            <div class="sheet-btn" onclick="prepareReply()">💬 Ответить</div>
+            <div style="padding: 12px; cursor: pointer;" onclick="prepareReply()">💬 Ответить</div>
             <div id="my-actions">
-                <div class="sheet-btn" onclick="editMsg()">✏️ Редактировать</div>
-                <div class="sheet-btn" style="color:red" onclick="deleteMsg()">🗑 Удалить</div>
+                <div style="padding: 12px; cursor: pointer;" onclick="editMsg()">✏️ Редактировать</div>
+                <div style="padding: 12px; cursor: pointer; color:red" onclick="deleteMsg()">🗑 Удалить</div>
             </div>
         </div>
 
@@ -153,8 +150,10 @@
                 const doc = await db.collection("users").doc(user.uid).get();
                 myData = doc.data() || { username: "user_" + user.uid.slice(0,4) };
                 
-                // Автозаполнение
+                // ШАПКА: Приоритет Нику, если нет - Юзернейму
                 document.getElementById('display-name-top').innerText = myData.displayName || myData.username;
+                
+                // Автозаполнение полей в настройках
                 document.getElementById('set-display-name').value = myData.displayName || "";
                 document.getElementById('set-username').value = myData.username || "";
                 document.getElementById('set-bio').value = myData.bio || "";
@@ -167,7 +166,7 @@
             } else { location.reload(); }
         });
 
-        // Фильтр на юзернейм
+        // Фильтр юзернейма: только английские буквы, цифры и _
         document.getElementById('set-username').addEventListener('input', function() {
             this.value = this.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
         });
@@ -175,20 +174,34 @@
         function toggleSettings() { document.getElementById('settings-menu').classList.toggle('open'); }
         
         async function saveProfile() {
-            const u = document.getElementById('set-username').value.trim();
-            if(u.length < 3) return alert("Слишком короткий юзернейм!");
+            const newU = document.getElementById('set-username').value.trim();
+            const newN = document.getElementById('set-display-name').value.trim();
+            const newB = document.getElementById('set-bio').value.trim();
 
-            // ПРОВЕРКА НА УНИКАЛЬНОСТЬ
-            const snap = await db.collection("users").where("username", "==", u).get();
+            if(newU.length < 3) return alert("Слишком короткий юзернейм!");
+
+            // Проверка уникальности в базе
+            const snap = await db.collection("users").where("username", "==", newU).get();
             if(!snap.empty && snap.docs[0].id !== auth.currentUser.uid) {
                 return alert("Этот юзернейм уже занят!");
             }
 
+            // Уведомления об изменениях
+            let msgs = [];
+            if(newU !== myData.username) msgs.push("Юзернейм изменен");
+            if(newN !== myData.displayName) msgs.push("Ник изменен");
+            if(newB !== myData.bio) msgs.push("Описание обновлено");
+
             await db.collection("users").doc(auth.currentUser.uid).update({
-                displayName: document.getElementById('set-display-name').value,
-                username: u, bio: document.getElementById('set-bio').value
+                displayName: newN, username: newU, bio: newB
             });
-            alert("Профиль обновлен!"); toggleSettings();
+
+            // Обновляем локально и в шапке
+            myData.username = newU; myData.displayName = newN; myData.bio = newB;
+            document.getElementById('display-name-top').innerText = newN || newU;
+
+            alert(msgs.length ? msgs.join("\n") : "Изменений нет");
+            toggleSettings();
         }
 
         async function updateAvatar(input) {
@@ -199,6 +212,7 @@
             if(json.success) {
                 await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
                 document.getElementById('edit-avatar').src = json.data.url;
+                alert("Аватар обновлен!");
             }
         }
 
@@ -212,12 +226,6 @@
             document.getElementById('chat-avatar').src = u.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
             document.getElementById('chat-controls').classList.remove('hidden');
             document.getElementById('chat-controls').style.display = 'flex';
-            
-            if(u.lastSeen) {
-                const isOnline = (Date.now() - u.lastSeen.seconds*1000) < 60000;
-                document.getElementById('chat-status').innerText = isOnline ? "в сети" : "был недавно";
-                document.getElementById('online-indicator').classList.toggle('hidden', !isOnline);
-            }
             loadMsgs();
         }
 
