@@ -245,7 +245,7 @@
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
         const json = await res.json();
         if(json.success) {
-            await db.collection("users").doc(auth.currentUser.uid).set({avatar: json.data.url}, {merge: true});
+            await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
             document.getElementById('my-preview').src = json.data.url;
         }
     }
@@ -260,7 +260,7 @@
         let taken = false;
         snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) taken = true; });
         if(taken) { alert("Этот ник уже занят!"); btn.disabled = false; return; }
-        await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge: true});
+        await db.collection("users").doc(auth.currentUser.uid).update({username: u, displayName: n});
         alert("Данные сохранены!"); btn.disabled = false; toggleSets();
     }
 
