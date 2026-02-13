@@ -2,127 +2,74 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Ultra Full Pro</title>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Messenger Final Fix</title>
     <style>
-        :root { --main: #24A1DE; --bg: #8fb1ce; --light: #efffde; }
-        * { box-sizing: border-box; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; justify-content: center; align-items: center; overflow: hidden; }
+        :root { --main: #24A1DE; --bg: #8fb1ce; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         
-        .card { background: white; width: 100%; max-width: 450px; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        @media (min-width: 500px) { .card { height: 95vh; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); } }
+        html, body { 
+            width: 100%; height: 100%; 
+            overflow: hidden; position: fixed; 
+            background: var(--bg);
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        
+        .card { 
+            background: white; width: 100%; max-width: 450px; 
+            height: 100%; margin: 0 auto;
+            display: flex; flex-direction: column; position: relative; 
+        }
 
-        /* Экраны */
-        .screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; display: flex; flex-direction: column; z-index: 10; }
+        .screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; display: flex; flex-direction: column; 
+            z-index: 500; padding: 30px; justify-content: center;
+        }
+        
         .hidden { display: none !important; }
 
-        /* Настройки */
-        .settings-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 200; transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .settings-overlay.open { transform: translateX(0); }
+        input { 
+            border: 1px solid #ccc; padding: 15px; background: #fdfdfd; 
+            border-radius: 12px; width: 100%; font-size: 16px; margin-bottom: 12px;
+            -webkit-appearance: none; 
+        }
 
-        /* Шапка */
-        .header { background: var(--main); color: white; padding: 10px 15px; display: flex; align-items: center; gap: 12px; z-index: 5; height: 60px; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; object-fit: cover; border: 1px solid rgba(255,255,255,0.3); }
-        .online-dot { width: 12px; height: 12px; background: #4df34d; border-radius: 50%; border: 2px solid white; position: absolute; bottom: 0; right: 0; }
+        .btn-main { 
+            background: var(--main); color: white; border: none; 
+            padding: 16px; border-radius: 12px; font-weight: bold; 
+            width: 100%; font-size: 16px; cursor: pointer;
+        }
 
-        /* Сообщения */
-        #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; display: flex; flex-direction: column; gap: 12px; }
-        .msg-container { display: flex; flex-direction: column; position: relative; max-width: 85%; }
-        .msg { padding: 8px 14px; border-radius: 15px; font-size: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); word-wrap: break-word; cursor: pointer; }
-        .my { align-self: flex-end; background: var(--light); border-bottom-right-radius: 2px; }
-        .other { align-self: flex-start; background: white; border-bottom-left-radius: 2px; }
-        
-        .reply-box { background: rgba(0,0,0,0.07); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 5px; border-radius: 4px; font-size: 12px; }
-        .reaction-badge { position: absolute; bottom: -8px; right: 8px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .time { font-size: 10px; color: gray; margin-top: 4px; align-self: flex-end; }
-
-        /* Меню действий */
-        #action-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 20px 20px 0 0; padding: 20px; transform: translateY(100%); transition: 0.3s; z-index: 250; }
-        #action-sheet.open { transform: translateY(0); }
-        .sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 240; display: none; }
-        .sheet-overlay.show { display: block; }
-
-        /* Ввод */
-        input, textarea { border: none; outline: none; padding: 12px; background: #f1f1f1; border-radius: 12px; width: 100%; font-size: 16px; }
-        .btn-main { background: var(--main); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 5px; }
-        .reply-preview-bar { background: white; padding: 8px 15px; border-top: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--main); }
+        .header { background: var(--main); color: white; padding: 12px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; -webkit-overflow-scrolling: touch; }
     </style>
 </head>
 <body>
 
-    <div id="auth-screen" class="screen" style="justify-content: center; padding: 40px; z-index: 500;">
-        <h2 style="text-align:center; color: var(--main)">Cloud Messenger</h2>
-        <input type="email" id="email" placeholder="Email" style="margin-bottom:10px">
-        <input type="password" id="pass" placeholder="Пароль" style="margin-bottom:20px">
-        <button onclick="handleAuth()" class="btn-main">Войти / Регистрация</button>
+    <div id="auth-screen" class="screen">
+        <h2 style="text-align:center; color: var(--main); margin-bottom: 25px;">Cloud Messenger</h2>
+        <input type="email" id="email" placeholder="Email" inputmode="email">
+        <input type="password" id="pass" placeholder="Пароль">
+        <button onclick="handleAuth()" class="btn-main">Начать работу</button>
+        <p id="loader-status" style="font-size: 12px; color: gray; text-align: center; margin-top: 10px;">Загрузка системы...</p>
     </div>
 
     <div id="app" class="card hidden">
-        <div id="settings-menu" class="settings-overlay">
-            <div style="display: flex; align-items: center; gap: 20px;">
-                <span style="font-size: 30px; cursor: pointer;" onclick="toggleSettings()">←</span>
-                <h2 style="margin:0">Профиль</h2>
-            </div>
-            <label style="text-align:center">
-                <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:110px; height:110px; border-radius:50%; object-fit:cover; border:3px solid var(--main); cursor:pointer;">
-                <input type="file" id="avatar-file" hidden onchange="updateAvatar(this)">
-            </label>
-            <label>Ваш Ник (как вас видят):</label>
-            <input type="text" id="set-display-name">
-            <label>Юзернейм (@):</label>
-            <input type="text" id="set-username" placeholder="Только a-z, 0-9, _">
-            <label>О себе:</label>
-            <textarea id="set-bio" rows="2"></textarea>
-            <button onclick="saveProfile()" class="btn-main">Сохранить изменения</button>
-            <button onclick="auth.signOut()" class="btn-main" style="background:#ff4d4d; margin-top:5px;">Выйти</button>
-        </div>
-
-        <div id="overlay" class="sheet-overlay" onclick="closeActionMenu()"></div>
-        
-        <div id="action-sheet">
-            <div style="display: flex; justify-content: space-around; margin-bottom: 15px; font-size: 26px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
-                <span onclick="setReaction('👍')">👍</span> <span onclick="setReaction('❤️')">❤️</span> <span onclick="setReaction('🔥')">🔥</span> <span onclick="setReaction('😂')">😂</span> <span onclick="setReaction('😮')">😮</span>
-            </div>
-            <div style="padding: 12px; cursor: pointer;" onclick="prepareReply()">💬 Ответить</div>
-            <div id="my-actions">
-                <div style="padding: 12px; cursor: pointer;" onclick="editMsg()">✏️ Редактировать</div>
-                <div style="padding: 12px; cursor: pointer; color:red" onclick="deleteMsg()">🗑 Удалить</div>
-            </div>
-        </div>
-
         <div class="header">
-            <div onclick="toggleSettings()" style="cursor:pointer; font-size: 24px;">☰</div>
-            <div style="position: relative;">
-                <img id="chat-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar">
-                <div id="online-indicator" class="online-dot hidden"></div>
-            </div>
-            <div class="header-info">
-                <b id="display-name-top">Загрузка...</b><br>
-                <small id="chat-status" style="opacity:0.8">выберите чат</small>
-            </div>
+            <div onclick="location.reload()" style="font-size: 20px;">🏠</div>
+            <b id="display-name-top">Мессенджер</b>
         </div>
-
-        <div style="padding: 10px; background: white; border-bottom: 1px solid #eee;">
-            <input type="text" id="search-user" placeholder="Поиск @юзернейма..." onkeypress="if(event.key==='Enter') startChat()" style="margin:0">
-        </div>
-
         <div id="messages"></div>
-
-        <div id="reply-preview" class="reply-preview-bar hidden">
-            <div id="reply-text-preview">Ответ на сообщение...</div>
-            <div onclick="cancelReply()" style="cursor:pointer">✖️</div>
-        </div>
-
-        <div id="chat-controls" class="hidden" style="padding: 10px; background: white; display: flex; align-items: center; gap: 10px;">
-            <label style="font-size: 24px; cursor: pointer;">🖼<input type="file" hidden onchange="sendPhoto(this)"></label>
+        <div style="padding: 12px; background: white; display: flex; gap: 8px; border-top: 1px solid #eee;">
             <input type="text" id="msg-text" placeholder="Сообщение..." style="margin:0">
-            <div style="font-size: 24px; cursor: pointer;" onclick="sendMsg()">🚀</div>
+            <button onclick="sendMsg()" style="padding: 0 15px; border:none; background:var(--main); color:white; border-radius:10px;">🚀</button>
         </div>
     </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
     <script>
         const firebaseConfig = {
@@ -133,160 +80,47 @@
             messagingSenderId: "1023277743941",
             appId: "1:1023277743941:web:ae94eaed1c12b30795082c"
         };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(), db = firebase.firestore();
-        let activeChatId = null, unsub = null, selectedMsgDoc = null, replyingTo = null, myData = {};
 
-        async function handleAuth() {
-            const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-            if(!e || !p) return alert("Заполни данные!");
-            await auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
-        }
+        // Инициализация с защитой от зависания
+        try {
+            firebase.initializeApp(firebaseConfig);
+            const auth = firebase.auth(), db = firebase.firestore();
+            document.getElementById('loader-status').innerText = "Готово к работе";
 
-        auth.onAuthStateChanged(async user => {
-            if(user) {
-                document.getElementById('auth-screen').classList.add('hidden');
-                document.getElementById('app').classList.remove('hidden');
-                const doc = await db.collection("users").doc(user.uid).get();
-                myData = doc.data() || { username: "user_" + user.uid.slice(0,4) };
-                
-                // ШАПКА: Приоритет Нику, если нет - Юзернейму
-                document.getElementById('display-name-top').innerText = myData.displayName || myData.username;
-                
-                // Автозаполнение полей в настройках
-                document.getElementById('set-display-name').value = myData.displayName || "";
-                document.getElementById('set-username').value = myData.username || "";
-                document.getElementById('set-bio').value = myData.bio || "";
-                if(myData.avatar) document.getElementById('edit-avatar').src = myData.avatar;
+            window.handleAuth = async () => {
+                const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+                if(!e || !p) return alert("Введите данные");
+                auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
+            };
 
-                db.collection("users").doc(user.uid).set(myData, {merge:true});
-                setInterval(() => {
-                    db.collection("users").doc(user.uid).update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
-                }, 30000);
-            } else { location.reload(); }
-        });
-
-        // Фильтр юзернейма: только английские буквы, цифры и _
-        document.getElementById('set-username').addEventListener('input', function() {
-            this.value = this.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-        });
-
-        function toggleSettings() { document.getElementById('settings-menu').classList.toggle('open'); }
-        
-        async function saveProfile() {
-            const newU = document.getElementById('set-username').value.trim();
-            const newN = document.getElementById('set-display-name').value.trim();
-            const newB = document.getElementById('set-bio').value.trim();
-
-            if(newU.length < 3) return alert("Слишком короткий юзернейм!");
-
-            // Проверка уникальности в базе
-            const snap = await db.collection("users").where("username", "==", newU).get();
-            if(!snap.empty && snap.docs[0].id !== auth.currentUser.uid) {
-                return alert("Этот юзернейм уже занят!");
-            }
-
-            // Уведомления об изменениях
-            let msgs = [];
-            if(newU !== myData.username) msgs.push("Юзернейм изменен");
-            if(newN !== myData.displayName) msgs.push("Ник изменен");
-            if(newB !== myData.bio) msgs.push("Описание обновлено");
-
-            await db.collection("users").doc(auth.currentUser.uid).update({
-                displayName: newN, username: newU, bio: newB
+            auth.onAuthStateChanged(user => {
+                if(user) {
+                    document.getElementById('auth-screen').style.display = 'none';
+                    document.getElementById('app').classList.remove('hidden');
+                    db.collection("users").doc(user.uid).set({ 
+                        username: "id" + user.uid.slice(0,5),
+                        lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                    }, {merge: true});
+                }
             });
 
-            // Обновляем локально и в шапке
-            myData.username = newU; myData.displayName = newN; myData.bio = newB;
-            document.getElementById('display-name-top').innerText = newN || newU;
-
-            alert(msgs.length ? msgs.join("\n") : "Изменений нет");
-            toggleSettings();
-        }
-
-        async function updateAvatar(input) {
-            const file = input.files[0]; if(!file) return;
-            const formData = new FormData(); formData.append('image', file);
-            const res = await fetch('https://api.imgbb.com/1/upload?key=604369e88849646c107106c6e7371192', { method: 'POST', body: formData });
-            const json = await res.json();
-            if(json.success) {
-                await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
-                document.getElementById('edit-avatar').src = json.data.url;
-                alert("Аватар обновлен!");
-            }
-        }
-
-        async function startChat() {
-            const target = document.getElementById('search-user').value.toLowerCase().replace('@','').trim();
-            const snap = await db.collection("users").where("username", "==", target).get();
-            if(snap.empty) return alert("Пользователь не найден");
-            activeChatId = snap.docs[0].id;
-            const u = snap.docs[0].data();
-            document.getElementById('display-name-top').innerText = u.displayName || u.username;
-            document.getElementById('chat-avatar').src = u.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            document.getElementById('chat-controls').classList.remove('hidden');
-            document.getElementById('chat-controls').style.display = 'flex';
-            loadMsgs();
-        }
-
-        function loadMsgs() {
-            if(unsub) unsub();
-            const id = [auth.currentUser.uid, activeChatId].sort().join("_");
-            unsub = db.collection("chats").doc(id).collection("messages").orderBy("time","asc").onSnapshot(s => {
-                const box = document.getElementById('messages'); box.innerHTML = "";
-                s.forEach(d => {
-                    const m = d.data();
-                    const cont = document.createElement('div');
-                    cont.className = "msg-container " + (m.sender === auth.currentUser.uid ? "my" : "other");
-                    const timeStr = m.time ? new Date(m.time.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-                    cont.innerHTML = `
-                        <div class="msg ${m.sender === auth.currentUser.uid ? 'my' : 'other'}">
-                            ${m.replyTo ? `<div class="reply-box"><b>Ответ на:</b> ${m.replyTo}</div>` : ''}
-                            ${m.type === 'image' ? `<img src="${m.url}" style="max-width:100%; border-radius:10px;">` : m.text}
-                            ${m.reaction ? `<div class="reaction-badge">${m.reaction}</div>` : ''}
-                        </div>
-                        <div class="time">${m.edited ? 'изм. ' : ''}${timeStr}</div>`;
-                    cont.onclick = () => { selectedMsgDoc = d; openActionMenu(m); };
-                    box.appendChild(cont);
-                });
-                box.scrollTop = box.scrollHeight;
-            });
-        }
-
-        function openActionMenu(data) {
-            document.getElementById('my-actions').style.display = (data.sender === auth.currentUser.uid) ? 'block' : 'none';
-            document.getElementById('action-sheet').classList.add('open');
-            document.getElementById('overlay').classList.add('show');
-        }
-        function closeActionMenu() { document.getElementById('action-sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
-        function prepareReply() { replyingTo = selectedMsgDoc.data().text || "Фото"; document.getElementById('reply-preview').classList.remove('hidden'); document.getElementById('reply-text-preview').innerText = "Ответ на: " + replyingTo; closeActionMenu(); }
-        function cancelReply() { replyingTo = null; document.getElementById('reply-preview').classList.add('hidden'); }
-        async function setReaction(emoji) { await selectedMsgDoc.ref.update({reaction: emoji}); closeActionMenu(); }
-        async function deleteMsg() { if(confirm("Удалить?")) await selectedMsgDoc.ref.delete(); closeActionMenu(); }
-        async function editMsg() { const nt = prompt("Редактировать:", selectedMsgDoc.data().text); if(nt) await selectedMsgDoc.ref.update({text: nt, edited: true}); closeActionMenu(); }
-
-        async function sendMsg() {
-            const t = document.getElementById('msg-text').value; if(!t || !activeChatId) return;
-            const id = [auth.currentUser.uid, activeChatId].sort().join("_");
-            await db.collection("chats").doc(id).collection("messages").add({
-                sender: auth.currentUser.uid, text: t, replyTo: replyingTo, type: 'text', time: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            document.getElementById('msg-text').value = ""; cancelReply();
-        }
-
-        async function sendPhoto(input) {
-            const file = input.files[0]; if(!file) return;
-            const formData = new FormData(); formData.append('image', file);
-            const res = await fetch('https://api.imgbb.com/1/upload?key=604369e88849646c107106c6e7371192', { method: 'POST', body: formData });
-            const json = await res.json();
-            if(json.success) {
-                const id = [auth.currentUser.uid, activeChatId].sort().join("_");
+            window.sendMsg = async () => {
+                const t = document.getElementById('msg-text').value; if(!t) return;
+                // Временный ID для теста, пока нет поиска
+                const id = "global_chat"; 
                 await db.collection("chats").doc(id).collection("messages").add({
-                    sender: auth.currentUser.uid, url: json.data.url, replyTo: replyingTo, type: 'image', time: firebase.firestore.FieldValue.serverTimestamp()
+                    sender: auth.currentUser.uid, text: t, time: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                cancelReply();
-            }
+                document.getElementById('msg-text').value = "";
+            };
+            
+        } catch (e) {
+            document.getElementById('loader-status').innerText = "Ошибка связи. Обновите страницу.";
+            console.error(e);
         }
+
+        // Фикс полоски загрузки для iOS
+        setTimeout(() => { window.scrollTo(0, 0); }, 100);
     </script>
 </body>
 </html>
