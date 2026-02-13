@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Elite PRO V3</title>
+    <title>Cloud Elite PRO V4</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -11,56 +11,60 @@
         :root { --main: #24A1DE; --bg: #f0f2f5; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
         body { background: var(--bg); height: 100vh; overflow: hidden; }
-        .screen { position: absolute; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; z-index: 1; }
+        .screen { position: absolute; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; }
         .hidden { display: none !important; }
-        .header { background: var(--main); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 60px; }
+        .header { background: var(--main); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 60px; z-index: 10; }
         .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; border: 1px solid #fff; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; display: flex; flex-direction: column; gap: 8px; }
         .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 16px; position: relative; box-shadow: 0 1px 2px #0002; }
         .my { align-self: flex-end; background: #efffde; border-bottom-right-radius: 2px; }
         .other { align-self: flex-start; background: white; border-bottom-left-radius: 2px; }
-        .react-tag { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; border: 1px solid #ddd; z-index: 2; }
-        .input-bar { padding: 12px; display: flex; gap: 12px; background: white; align-items: center; border-top: 1px solid #eee; padding-bottom: 30px; }
+        .reply-box { font-size: 12px; background: rgba(0,0,0,0.05); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 4px; border-radius: 4px; color: #555; }
+        .input-area { background: white; border-top: 1px solid #eee; padding: 10px; padding-bottom: 30px; }
+        #reply-preview { display: flex; align-items: center; background: #f9f9f9; padding: 8px; border-left: 4px solid var(--main); margin-bottom: 8px; border-radius: 4px; }
+        .input-bar { display: flex; gap: 12px; align-items: center; }
         .input-bar input { border: none; padding: 12px; background: #f0f0f5; border-radius: 20px; flex: 1; font-size: 16px; outline: none; }
-        .btn-ui { background: var(--main); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 12px; font-size: 16px; }
         #action-sheet { position: fixed; bottom: 0; width: 100%; background: white; padding: 25px; transform: translateY(100%); transition: 0.3s; z-index: 1000; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 25px #0004; }
         #action-sheet.open { transform: translateY(0); }
+        .react-tag { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; border: 1px solid #ddd; }
     </style>
 </head>
 <body>
 
 <div id="scr-auth" class="screen" style="justify-content: center; padding: 30px;">
     <h1 style="text-align:center; color:var(--main); margin-bottom:25px;">Cloud Elite</h1>
-    <input type="email" id="auth-email" placeholder="Email" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none;">
-    <input type="password" id="auth-pass" placeholder="Пароль" style="margin-top:10px; padding:12px; background:#f0f0f0; border-radius:10px; border:none;">
-    <button onclick="handleAuth()" class="btn-ui">Войти / Регистрация</button>
+    <input type="email" id="auth-email" placeholder="Email" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; margin-bottom:10px; width:100%">
+    <input type="password" id="auth-pass" placeholder="Пароль" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+    <button onclick="handleAuth()" style="background:var(--main); color:white; border:none; padding:15px; border-radius:12px; width:100%; margin-top:15px; font-weight:bold">Войти</button>
 </div>
 
 <div id="scr-list" class="screen hidden">
-    <div class="header">
-        <div onclick="toggleSets()" style="font-size:24px; cursor:pointer">☰</div>
-        <b style="flex:1; text-align:center">Мессенджер</b>
-    </div>
-    <div style="padding:10px; background:#fff; border-bottom:1px solid #eee;">
-        <input type="text" id="user-search" placeholder="Поиск ника..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
-    </div>
-    <div id="chat-list-container" style="overflow-y:auto; flex:1"></div>
+    <div class="header"><div onclick="toggleSets()" style="cursor:pointer">☰</div><b style="flex:1; text-align:center">Чаты</b></div>
+    <div style="padding:10px;"><input type="text" id="user-search" placeholder="Поиск..." oninput="filterUsers()" style="width:100%; padding:10px; border-radius:10px; border:none; background:#f0f0f5"></div>
+    <div id="chat-list-container" style="flex:1; overflow-y:auto"></div>
 </div>
 
 <div id="scr-chat" class="screen hidden">
     <div class="header">
         <div onclick="backToList()" style="cursor:pointer; font-size:26px">‹</div>
-        <img id="head-avatar" class="avatar" src="">
+        <img id="head-avatar" class="avatar">
         <div style="flex:1">
             <b id="head-name">...</b><br>
-            <small id="head-status" style="font-size:11px; opacity:0.9">онлайн</small>
+            <small id="head-status" style="font-size:11px; opacity:0.9">загрузка...</small>
         </div>
     </div>
     <div id="messages"></div>
-    <div class="input-bar">
-        <label style="cursor:pointer; font-size:28px" title="Отправить фото">📸<input type="file" id="file-photo" hidden onchange="uploadImg(this)"></label>
-        <input type="text" id="msg-input" placeholder="Сообщение...">
-        <button onclick="sendMsg()" style="border:none; background:none; font-size:28px">🚀</button>
+    
+    <div class="input-area">
+        <div id="reply-preview" class="hidden">
+            <div style="flex:1; font-size:12px;" id="reply-text-preview">Ответ на...</div>
+            <div onclick="cancelReply()" style="cursor:pointer; padding:5px">✕</div>
+        </div>
+        <div class="input-bar">
+            <label style="cursor:pointer; font-size:28px">📸<input type="file" id="file-photo" hidden onchange="uploadImg(this)"></label>
+            <input type="text" id="msg-input" placeholder="Сообщение...">
+            <button onclick="sendMsg()" style="border:none; background:none; font-size:28px">🚀</button>
+        </div>
     </div>
 </div>
 
@@ -70,26 +74,21 @@
         <label>
             <img id="my-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar" style="width:90px; height:90px; border: 2px solid var(--main)">
             <input type="file" hidden onchange="uploadAvatar(this)">
-            <p style="color:var(--main); margin-top:8px; font-weight:bold; font-size:14px">Сменить фото профиля</p>
+            <p style="color:var(--main); margin-top:8px; font-weight:bold">Изменить фото</p>
         </label>
     </div>
-    <p style="font-size:12px; color:gray">Ваше имя:</p>
-    <input type="text" id="set-name" placeholder="Имя" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%; margin-bottom:15px">
-    <p style="font-size:12px; color:gray">Юзернейм (Уникальный):</p>
-    <input type="text" id="set-user" placeholder="jdhd7dhxhzgd" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
-    <button onclick="saveProfile()" id="btn-save" class="btn-ui">Сохранить данные</button>
-    <button onclick="auth.signOut()" class="btn-ui" style="background:#ff3b30">Выйти</button>
+    <input type="text" id="set-name" placeholder="Имя" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd">
+    <input type="text" id="set-user" placeholder="Юзернейм" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd">
+    <button onclick="saveProfile()" id="btn-save" style="width:100%; padding:15px; background:var(--main); color:white; border:none; border-radius:12px; font-weight:bold">Сохранить</button>
 </div>
 
 <div id="action-sheet">
-    <div style="display:flex; justify-content:space-around; margin-bottom:25px; font-size:32px">
-        <span onclick="addReact('👍')" style="cursor:pointer">👍</span>
-        <span onclick="addReact('❤️')" style="cursor:pointer">❤️</span>
-        <span onclick="addReact('😂')" style="cursor:pointer">😂</span>
-        <span onclick="addReact('🔥')" style="cursor:pointer">🔥</span>
+    <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:30px">
+        <span onclick="addReact('👍')">👍</span><span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('🔥')">🔥</span>
     </div>
-    <div onclick="deleteMsg()" style="color:red; text-align:center; font-weight:bold; font-size:18px; cursor:pointer">Удалить это сообщение</div>
-    <div onclick="closeActions()" style="text-align:center; margin-top:20px; color:gray; cursor:pointer">Отмена</div>
+    <div onclick="startReply()" style="text-align:center; font-weight:bold; padding:15px; border-bottom:1px solid #eee; cursor:pointer">Ответить</div>
+    <div onclick="deleteMsg()" style="color:red; text-align:center; font-weight:bold; padding:15px; cursor:pointer">Удалить</div>
+    <div onclick="closeActions()" style="text-align:center; margin-top:15px; color:gray">Отмена</div>
 </div>
 
 <script>
@@ -105,7 +104,7 @@
     const auth = firebase.auth(), db = firebase.firestore();
     const IMG_KEY = "0922d3e28da55ca6daee14cbe5073ae6";
 
-    let activeChatId = null, unsubMsgs = null, selectedDoc = null, allUsers = [];
+    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, replyData = null, allUsers = [];
 
     auth.onAuthStateChanged(async user => {
         if(user) {
@@ -114,14 +113,11 @@
             document.getElementById('set-name').value = d.displayName || "";
             document.getElementById('set-user').value = d.username || "jdhd7dhxhzgd";
             if(d.avatar) document.getElementById('my-preview').src = d.avatar;
-            
             document.getElementById('scr-list').classList.remove('hidden');
             document.getElementById('scr-auth').classList.add('hidden');
             loadUsers();
-            db.collection("users").doc(user.uid).set({online:true}, {merge:true});
-        } else {
-            document.getElementById('scr-auth').classList.remove('hidden');
-            document.getElementById('scr-list').classList.add('hidden');
+            // Обновляем статус при входе
+            db.collection("users").doc(user.uid).set({online:true, lastSeen: Date.now()}, {merge:true});
         }
     });
 
@@ -141,25 +137,28 @@
         const box = document.getElementById('chat-list-container'); box.innerHTML = "";
         list.forEach(u => {
             const d = document.createElement('div');
-            d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
+            d.style = "display:flex; align-items:center; padding:12px; border-bottom:1px solid #eee; cursor:pointer";
             d.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar">
-                           <div style="margin-left:15px"><b>${u.displayName || u.username}</b><br><small style="color:gray">@${u.username || 'user'}</small></div>`;
+                           <div style="margin-left:12px"><b>${u.displayName || u.username}</b><br><small style="color:${u.online?'green':'gray'}">${u.online?'в сети':'был(а) недавно'}</small></div>`;
             d.onclick = () => openChat(u.id, u);
             box.appendChild(d);
         });
-    }
-
-    function filterUsers() {
-        const q = document.getElementById('user-search').value.toLowerCase();
-        renderUsers(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)));
     }
 
     function openChat(id, u) {
         activeChatId = id;
         document.getElementById('head-name').innerText = u.displayName || u.username;
         document.getElementById('head-avatar').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
-        document.getElementById('head-status').innerText = u.online ? "онлайн" : "был(а) недавно";
         document.getElementById('scr-chat').classList.remove('hidden');
+        
+        // Слушаем статус собеседника в реальном времени
+        if(unsubStatus) unsubStatus();
+        unsubStatus = db.collection("users").doc(id).onSnapshot(doc => {
+            const data = doc.data();
+            document.getElementById('head-status').innerText = data.online ? "в сети" : "был(а) недавно";
+            document.getElementById('head-status').style.color = data.online ? "#34eb46" : "rgba(255,255,255,0.8)";
+        });
+
         loadMsgs();
     }
 
@@ -171,9 +170,12 @@
             s.forEach(d => {
                 const m = d.data(), c = document.createElement('div');
                 c.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
-                if(m.type === 'img') c.innerHTML = `<img src="${m.url}" style="max-width:100%; border-radius:12px; display:block">`;
-                else c.innerText = m.text;
-                if(m.re) c.innerHTML += `<div class="react-tag">${m.re}</div>`;
+                let html = "";
+                if(m.replyTo) html += `<div class="reply-box"><b>Ответ:</b><br>${m.replyTo}</div>`;
+                if(m.type === 'img') html += `<img src="${m.url}" style="max-width:100%; border-radius:10px; display:block">`;
+                else html += m.text;
+                if(m.re) html += `<div class="react-tag">${m.re}</div>`;
+                c.innerHTML = html;
                 c.onclick = () => { selectedDoc = d; document.getElementById('action-sheet').classList.add('open'); };
                 box.appendChild(c);
             });
@@ -182,11 +184,27 @@
     }
 
     async function sendMsg() {
-        const t = document.getElementById('msg-input').value; if(!t) return;
+        const t = document.getElementById('msg-input').value; if(!t && !replyData) return;
         const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-        await db.collection("chats").doc(cId).collection("messages").add({sender:auth.currentUser.uid, text:t, time:firebase.firestore.FieldValue.serverTimestamp()});
+        const msgObj = {
+            sender: auth.currentUser.uid,
+            text: t,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if(replyData) { msgObj.replyTo = replyData; cancelReply(); }
+        await db.collection("chats").doc(cId).collection("messages").add(msgObj);
         document.getElementById('msg-input').value = "";
     }
+
+    function startReply() {
+        const m = selectedDoc.data();
+        replyData = m.type === 'img' ? "Фотография" : m.text;
+        document.getElementById('reply-preview').classList.remove('hidden');
+        document.getElementById('reply-text-preview').innerText = replyData;
+        closeActions();
+    }
+
+    function cancelReply() { replyData = null; document.getElementById('reply-preview').classList.add('hidden'); }
 
     async function uploadImg(el) {
         if(!el.files[0]) return;
@@ -207,7 +225,7 @@
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
         const json = await res.json();
         if(json.success) {
-            await db.collection("users").doc(auth.currentUser.uid).set({avatar: json.data.url}, {merge:true});
+            await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
             document.getElementById('my-preview').src = json.data.url;
         }
     }
@@ -215,19 +233,12 @@
     async function saveProfile() {
         const u = document.getElementById('set-user').value.trim().toLowerCase();
         const n = document.getElementById('set-name').value.trim();
-        const btn = document.getElementById('btn-save');
-        if(!u) return alert("Введите ник!");
-        btn.disabled = true;
-
-        // ПРОВЕРКА НА УНИКАЛЬНОСТЬ
         const snap = await db.collection("users").where("username", "==", u).get();
         let taken = false;
-        snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) taken = true; });
-
-        if(taken) { alert("Этот ник уже занят другим!"); btn.disabled = false; return; }
-
+        snap.forEach(d => { if(d.id !== auth.currentUser.uid) taken = true; });
+        if(taken) return alert("Ник занят!");
         await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge:true});
-        alert("Сохранено!"); btn.disabled = false; toggleSets(); loadUsers();
+        alert("Сохранено!"); toggleSets(); loadUsers();
     }
 
     function addReact(r) { selectedDoc.ref.update({re: r}); closeActions(); }
@@ -235,6 +246,10 @@
     function closeActions() { document.getElementById('action-sheet').classList.remove('open'); }
     function backToList() { document.getElementById('scr-chat').classList.add('hidden'); if(unsubMsgs) unsubMsgs(); }
     function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        renderUsers(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)));
+    }
 </script>
 </body>
 </html>
