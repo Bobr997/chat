@@ -42,7 +42,7 @@
         <b style="flex:1; text-align:center">Мессенджер</b>
     </div>
     <div style="padding:10px; background:#fff; border-bottom:1px solid #eee;">
-        <input type="text" id="user-search" placeholder="Поиск ника..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+        <input type="text" id="user-search" placeholder="Поиск ника @..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
     </div>
     <div id="chat-list-container" style="overflow-y:auto; flex:1"></div>
 </div>
@@ -102,7 +102,7 @@
     const auth = firebase.auth(), db = firebase.firestore();
     const IMG_KEY = "0922d3e28da55ca6daee14cbe5073ae6";
 
-    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, allUsers = [];
+    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, allUsers = [], myActiveChats = [];
 
     auth.onAuthStateChanged(async user => {
         if(user) {
@@ -114,25 +114,18 @@
             
             document.getElementById('scr-list').classList.remove('hidden');
             document.getElementById('scr-auth').classList.add('hidden');
-            loadUsers();
+            
+            loadMyChats(); // Загружаем только МОИ чаты
             db.collection("users").doc(user.uid).set({online: true}, {merge: true});
         } else {
             document.getElementById('scr-auth').classList.remove('hidden');
             document.getElementById('scr-list').classList.add('hidden');
-            document.getElementById('scr-chat').classList.add('hidden');
-            document.getElementById('scr-sets').classList.add('hidden');
         }
     });
 
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
-        if(e && p) {
-            try {
-                await auth.signInWithEmailAndPassword(e, p);
-            } catch (err) {
-                await auth.createUserWithEmailAndPassword(e, p);
-            }
-        }
+        if(e && p) auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
     }
 
     async function signOut() {
@@ -140,16 +133,33 @@
         auth.signOut();
     }
 
-    function loadUsers() {
+    // Загрузка только тех пользователей, с кем УЖЕ есть переписка
+    function loadMyChats() {
+        // Подгружаем всех пользователей в память один раз для поиска
         db.collection("users").onSnapshot(snap => {
             allUsers = [];
             snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) allUsers.push({id: doc.id, ...doc.data()}); });
-            renderUsers(allUsers);
+            
+            // Теперь ищем активные чаты в коллекции chats
+            db.collection("chats").onSnapshot(snapChats => {
+                myActiveChats = [];
+                snapChats.forEach(chatDoc => {
+                    if(chatDoc.id.includes(auth.currentUser.uid)) {
+                        const otherId = chatDoc.id.replace(auth.currentUser.uid, "").replace("_", "");
+                        const userData = allUsers.find(u => u.id === otherId);
+                        if(userData) myActiveChats.push(userData);
+                    }
+                });
+                renderUsers(myActiveChats); // Показываем только активные
+            });
         });
     }
 
     function renderUsers(list) {
         const box = document.getElementById('chat-list-container'); box.innerHTML = "";
+        if(list.length === 0) {
+            box.innerHTML = "<p style='text-align:center; color:gray; padding:20px'>Нет активных чатов. Найдите друга через поиск!</p>";
+        }
         list.forEach(u => {
             const d = document.createElement('div');
             d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
@@ -162,7 +172,11 @@
     }
 
     function filterUsers() {
-        const q = document.getElementById('user-search').value.toLowerCase();
+        const q = document.getElementById('user-search').value.toLowerCase().trim();
+        if(q === "") {
+            renderUsers(myActiveChats); // Если поиск пуст, возвращаем список своих чатов
+            return;
+        }
         const filtered = allUsers.filter(u => 
             (u.displayName && u.displayName.toLowerCase().includes(q)) || 
             (u.username && u.username.toLowerCase().includes(q))
@@ -195,11 +209,8 @@
             s.forEach(d => {
                 const m = d.data(), c = document.createElement('div');
                 c.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
-                if(m.type === 'img') {
-                    c.innerHTML = `<img src="${m.url}" style="max-width:100%; border-radius:12px; display:block">`;
-                } else {
-                    c.innerText = m.text;
-                }
+                if(m.type === 'img') c.innerHTML = `<img src="${m.url}" style="max-width:100%; border-radius:12px; display:block">`;
+                else c.innerText = m.text;
                 if(m.re) c.innerHTML += `<div class="react-tag">${m.re}</div>`;
                 c.onclick = () => { selectedDoc = d; document.getElementById('action-sheet').classList.add('open'); };
                 box.appendChild(c);
@@ -211,6 +222,10 @@
     async function sendMsg() {
         const t = document.getElementById('msg-input').value; if(!t || !activeChatId) return;
         const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
+        
+        // Создаем документ чата, если его нет (чтобы он появился в списке)
+        await db.collection("chats").doc(cId).set({ lastUpdate: firebase.firestore.FieldValue.serverTimestamp() }, {merge: true});
+        
         await db.collection("chats").doc(cId).collection("messages").add({
             sender: auth.currentUser.uid, 
             text: t, 
@@ -227,6 +242,7 @@
             const json = await res.json();
             if(json.success) {
                 const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
+                await db.collection("chats").doc(cId).set({ lastUpdate: firebase.FieldValue.serverTimestamp() }, {merge: true});
                 await db.collection("chats").doc(cId).collection("messages").add({
                     sender: auth.currentUser.uid, 
                     type: 'img', 
@@ -234,7 +250,7 @@
                     time: firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
-        } catch (e) { alert("Ошибка загрузки"); }
+        } catch (e) { console.error(e); }
         el.value = "";
     }
 
@@ -244,7 +260,7 @@
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
         const json = await res.json();
         if(json.success) {
-            await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
+            await db.collection("users").doc(auth.currentUser.uid).set({avatar: json.data.url}, {merge: true});
             document.getElementById('my-preview').src = json.data.url;
         }
     }
@@ -266,8 +282,8 @@
         alert("Данные сохранены!"); btn.disabled = false; toggleSets();
     }
 
-    function addReact(r) { if(selectedDoc) selectedDoc.ref.update({re: r}); closeActions(); }
-    function deleteMsg() { if(selectedDoc && confirm("Удалить?")) selectedDoc.ref.delete(); closeActions(); }
+    function addReact(r) { selectedDoc.ref.update({re: r}); closeActions(); }
+    function deleteMsg() { if(confirm("Удалить?")) selectedDoc.ref.delete(); closeActions(); }
     function closeActions() { document.getElementById('action-sheet').classList.remove('open'); }
     function backToList() { document.getElementById('scr-chat').classList.add('hidden'); if(unsubMsgs) unsubMsgs(); if(unsubStatus) unsubStatus(); }
     function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
