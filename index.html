@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cloud Chat</title>
+    <title>Cloud Chat + Photo</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -12,29 +12,20 @@
         :root { --main: #24A1DE; --bg: #8fb1ce; --light: #efffde; }
         * { box-sizing: border-box; transition: 0.2s; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
-        
-        /* Карточки */
         .card { background: white; width: 95%; max-width: 400px; padding: 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
         #app { height: 90vh; display: none; flex-direction: column; overflow: hidden; padding: 0; }
-        
-        /* Поля и кнопки */
-        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; outline: none; background: #fdfdfd; }
-        input:focus { border-color: var(--main); box-shadow: 0 0 5px rgba(36,161,222,0.3); }
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; outline: none; }
         button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
         .btn-blue { background: var(--main); color: white; }
-        .btn-blue:active { transform: scale(0.98); }
-        
-        /* Интерфейс чата */
         .header { background: var(--main); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .settings-panel { padding: 15px; background: #f0f4f7; border-bottom: 1px solid #ddd; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #e6eef3; }
-        .msg { padding: 10px 15px; border-radius: 15px; max-width: 85%; font-size: 14px; position: relative; line-height: 1.4; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 85%; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
+        .msg img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
         .msg.my { align-self: flex-end; background: var(--light); border-bottom-right-radius: 4px; border: 1px solid #c8e6a1; }
         .msg.other { align-self: flex-start; background: white; border-bottom-left-radius: 4px; border: 1px solid #ddd; }
-        
-        .error-text { color: #ff4d4d; font-size: 13px; text-align: center; margin-bottom: 5px; }
+        .error-text { color: #ff4d4d; font-size: 13px; text-align: center; }
         .hidden { display: none !important; }
-        .back-btn { font-size: 20px; cursor: pointer; }
+        .loader { font-size: 10px; color: gray; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -44,7 +35,7 @@
         <input type="email" id="login-email" placeholder="Email">
         <input type="password" id="login-pass" placeholder="Пароль">
         <div id="login-error" class="error-text"></div>
-        <button class="btn-blue" id="login-btn" onclick="handleAuth('login')">Войти</button>
+        <button class="btn-blue" onclick="handleAuth('login')">Войти</button>
         <button style="background:none; color:var(--main); margin-top:10px;" onclick="showScreen('reg')">Создать аккаунт</button>
     </div>
 
@@ -53,38 +44,35 @@
         <input type="email" id="reg-email" placeholder="Email">
         <input type="password" id="reg-pass" placeholder="Пароль">
         <div id="reg-error" class="error-text"></div>
-        <button class="btn-blue" id="reg-btn" onclick="handleAuth('reg')">Зарегистрироваться</button>
-        <button style="background:none; color:var(--main); margin-top:10px;" onclick="showScreen('login')">Есть аккаунт? Войти</button>
+        <button class="btn-blue" onclick="handleAuth('reg')">Зарегистрироваться</button>
+        <button style="background:none; color:var(--main); margin-top:10px;" onclick="showScreen('login')">Войти</button>
     </div>
 
     <div id="app" class="card">
         <div class="header">
             <span id="user-nick" style="font-weight: bold;">@loading...</span>
-            <span class="back-btn" onclick="toggleSettings()">⚙️</span>
-        </div>
-
-        <div id="settings" class="settings-panel hidden">
-            <label style="font-size: 12px; color: #666;">Сменить ник:</label>
-            <div style="display:flex; gap:5px;">
-                <input type="text" id="new-nick" placeholder="Новый ник" style="margin:0;">
-                <button class="btn-blue" style="width: auto; padding: 5px 15px;" onclick="changeUsername()">ОК</button>
-            </div>
-            <button onclick="auth.signOut()" style="background:#ff4d4d; color:white; margin-top:10px; padding:8px;">Выйти из аккаунта</button>
+            <span onclick="auth.signOut()" style="cursor:pointer">Выйти</span>
         </div>
 
         <div style="padding: 10px; background: white;">
             <input type="text" id="search-user" placeholder="Поиск друга по @нику..." onkeypress="if(event.key==='Enter') startChat()">
         </div>
 
-        <div id="messages">Найдите друга, чтобы начать чат</div>
+        <div id="messages">Найдите друга по нику</div>
 
-        <div id="chat-box" class="hidden" style="padding:10px; background: white; display:flex; gap:5px; border-top: 1px solid #eee;">
+        <div id="chat-box" class="hidden" style="padding:10px; background: white; display:flex; gap:5px; border-top: 1px solid #eee; align-items: center;">
+            <label style="cursor:pointer; font-size: 24px;" title="Отправить фото">
+                🖼
+                <input type="file" id="photo-input" hidden accept="image/*" onchange="uploadPhoto(this)">
+            </label>
             <input type="text" id="msg-text" placeholder="Сообщение..." style="margin:0;" onkeypress="if(event.key==='Enter') sendMsg()">
             <button class="btn-blue" style="width:60px; margin:0;" onclick="sendMsg()">🚀</button>
         </div>
+        <div id="upload-status" class="hidden" style="text-align:center; font-size:12px; padding:5px; background:#fff">Загрузка фото...</div>
     </div>
 
     <script>
+        // Твои конфиги
         const firebaseConfig = {
             apiKey: "AIzaSyCuDXnXksaxGp_-Oml82uuymgXNRDRS37Y",
             authDomain: "mymessenger-2b9d0.firebaseapp.com",
@@ -108,46 +96,15 @@
         async function handleAuth(type) {
             const email = document.getElementById(type + '-email').value.trim();
             const pass = document.getElementById(type + '-pass').value.trim();
-            const errDiv = document.getElementById(type + '-error');
-            const btn = document.getElementById(type + '-btn');
-            
-            if(!email || !pass) return errDiv.innerText = "Заполни все поля!";
-            btn.disabled = true;
-
             try {
                 if(type === 'reg') {
                     const res = await auth.createUserWithEmailAndPassword(email, pass);
-                    // Генерируем случайный ник
                     const randomNick = "user_" + Math.floor(Math.random() * 9999);
-                    await db.collection("users").doc(res.user.uid).set({
-                        username: randomNick.toLowerCase(),
-                        email: email
-                    });
+                    await db.collection("users").doc(res.user.uid).set({ username: randomNick.toLowerCase(), email: email });
                 } else {
                     await auth.signInWithEmailAndPassword(email, pass);
                 }
-            } catch (e) {
-                errDiv.innerText = "Ошибка: " + e.message;
-                btn.disabled = false;
-            }
-        }
-
-        async function changeUsername() {
-            const newNick = document.getElementById('new-nick').value.toLowerCase().trim();
-            if(newNick.length < 3) return alert("Ник слишком короткий!");
-
-            // Проверка на уникальность
-            const snap = await db.collection("users").where("username", "==", newNick).get();
-            if(!snap.empty) return alert("Этот ник уже занят!");
-
-            await db.collection("users").doc(auth.currentUser.uid).update({ username: newNick });
-            document.getElementById('user-nick').innerText = "@" + newNick;
-            alert("Ник изменен!");
-            toggleSettings();
-        }
-
-        function toggleSettings() {
-            document.getElementById('settings').classList.toggle('hidden');
+            } catch (e) { alert(e.message); }
         }
 
         auth.onAuthStateChanged(async (user) => {
@@ -162,7 +119,6 @@
             }
         });
 
-        // ЛОГИКА ЧАТА (без изменений)
         let activeChatId = null;
         let unsub = null;
 
@@ -185,23 +141,58 @@
                     const m = d.data();
                     const div = document.createElement('div');
                     div.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
-                    div.innerText = m.text;
+                    
+                    if(m.type === 'image') {
+                        div.innerHTML = `<img src="${m.url}" onclick="window.open('${m.url}')">`;
+                    } else {
+                        div.innerText = m.text;
+                    }
                     c.appendChild(div);
                 });
                 c.scrollTop = c.scrollHeight;
             });
         }
 
-        async function sendMsg() {
+        async function sendMsg(type = 'text', url = null) {
             const t = document.getElementById('msg-text').value;
-            if(!t || !activeChatId) return;
+            if(!activeChatId || (type === 'text' && !t)) return;
+            
             const id = [auth.currentUser.uid, activeChatId].sort().join("_");
-            await db.collection("chats").doc(id).collection("messages").add({
-                text: t,
+            const data = {
                 sender: auth.currentUser.uid,
-                time: firebase.firestore.FieldValue.serverTimestamp()
-            });
+                time: firebase.firestore.FieldValue.serverTimestamp(),
+                type: type
+            };
+            
+            if(type === 'image') data.url = url;
+            else data.text = t;
+
+            await db.collection("chats").doc(id).collection("messages").add(data);
             document.getElementById('msg-text').value = "";
+        }
+
+        async function uploadPhoto(input) {
+            if(!input.files[0]) return;
+            const file = input.files[0];
+            document.getElementById('upload-status').classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                // Используем бесплатный API ImgBB (публичный ключ)
+                const res = await fetch('https://api.imgbb.com/1/upload?key=604369e88849646c107106c6e7371192', {
+                    method: 'POST',
+                    body: formData
+                });
+                const json = await res.json();
+                if(json.success) {
+                    await sendMsg('image', json.data.url);
+                }
+            } catch (e) { alert("Ошибка загрузки фото"); }
+            
+            document.getElementById('upload-status').classList.add('hidden');
+            input.value = "";
         }
     </script>
 </body>
