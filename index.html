@@ -53,12 +53,12 @@
         <img id="head-avatar" class="avatar" src="">
         <div style="flex:1">
             <b id="head-name">...</b><br>
-            <small id="head-status" style="font-size:11px; opacity:0.9">загрузка...</small>
+            <small id="head-status" style="font-size:11px; opacity:0.9">не в сети</small>
         </div>
     </div>
     <div id="messages"></div>
     <div class="input-bar">
-        <label style="cursor:pointer; font-size:28px" title="Отправить фото">📸<input type="file" id="file-photo" hidden onchange="uploadImg(this)"></label>
+        <label style="cursor:pointer; font-size:28px">📸<input type="file" id="file-photo" hidden onchange="uploadImg(this)"></label>
         <input type="text" id="msg-input" placeholder="Сообщение...">
         <button onclick="sendMsg()" style="border:none; background:none; font-size:28px">🚀</button>
     </div>
@@ -76,20 +76,17 @@
     <p style="font-size:12px; color:gray">Ваше имя:</p>
     <input type="text" id="set-name" placeholder="Имя" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%; margin-bottom:15px">
     <p style="font-size:12px; color:gray">Юзернейм (Уникальный):</p>
-    <input type="text" id="set-user" placeholder="Ваш ник" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+    <input type="text" id="set-user" placeholder="Придумайте ник..." style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
     <button onclick="saveProfile()" id="btn-save" class="btn-ui">Сохранить данные</button>
-    <button onclick="auth.signOut()" class="btn-ui" style="background:#ff3b30">Выйти</button>
+    <button onclick="signOut()" class="btn-ui" style="background:#ff3b30">Выйти</button>
 </div>
 
 <div id="action-sheet">
     <div style="display:flex; justify-content:space-around; margin-bottom:25px; font-size:32px">
-        <span onclick="addReact('👍')" style="cursor:pointer">👍</span>
-        <span onclick="addReact('❤️')" style="cursor:pointer">❤️</span>
-        <span onclick="addReact('😂')" style="cursor:pointer">😂</span>
-        <span onclick="addReact('🔥')" style="cursor:pointer">🔥</span>
+        <span onclick="addReact('👍')">👍</span><span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('🔥')">🔥</span>
     </div>
-    <div onclick="deleteMsg()" style="color:red; text-align:center; font-weight:bold; font-size:18px; cursor:pointer">Удалить это сообщение</div>
-    <div onclick="closeActions()" style="text-align:center; margin-top:20px; color:gray; cursor:pointer">Отмена</div>
+    <div onclick="deleteMsg()" style="color:red; text-align:center; font-weight:bold; font-size:18px;">Удалить это сообщение</div>
+    <div onclick="closeActions()" style="text-align:center; margin-top:20px; color:gray;">Отмена</div>
 </div>
 
 <script>
@@ -112,25 +109,32 @@
             const doc = await db.collection("users").doc(user.uid).get();
             const d = doc.data() || {};
             document.getElementById('set-name').value = d.displayName || "";
-            document.getElementById('set-user').value = d.username || "";
+            document.getElementById('set-user').value = d.username || ""; // ТУТ ТЕПЕРЬ ПУСТО ПО УМОЛЧАНИЮ
             if(d.avatar) document.getElementById('my-preview').src = d.avatar;
             
             document.getElementById('scr-list').classList.remove('hidden');
             document.getElementById('scr-auth').classList.add('hidden');
             loadUsers();
-            db.collection("users").doc(user.uid).set({online:true}, {merge:true});
+            // Ставим "онлайн" при входе
+            db.collection("users").doc(user.uid).update({online: true});
         } else {
             document.getElementById('scr-auth').classList.remove('hidden');
             document.getElementById('scr-list').classList.add('hidden');
         }
     });
 
+    // Функция выхода с обновлением статуса
+    async function signOut() {
+        if(auth.currentUser) await db.collection("users").doc(auth.currentUser.uid).update({online: false});
+        auth.signOut();
+    }
+
     async function handleAuth() {
         const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
         if(e && p) auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
     }
 
-    async function loadUsers() {
+    function loadUsers() {
         db.collection("users").onSnapshot(snap => {
             allUsers = [];
             snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) allUsers.push({id: doc.id, ...doc.data()}); });
@@ -143,16 +147,12 @@
         list.forEach(u => {
             const d = document.createElement('div');
             d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
+            const statusColor = u.online ? "#4CAF50" : "#999";
             d.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar">
-                           <div style="margin-left:15px"><b>${u.displayName || u.username}</b><br><small style="color:${u.online?'green':'gray'}">${u.online?'онлайн':'не в сети'}</small></div>`;
+                           <div style="margin-left:15px"><b style="color:${statusColor}">${u.displayName || u.username || 'Без имени'}</b><br><small style="color:gray">@${u.username || 'user'}</small></div>`;
             d.onclick = () => openChat(u.id, u);
             box.appendChild(d);
         });
-    }
-
-    function filterUsers() {
-        const q = document.getElementById('user-search').value.toLowerCase();
-        renderUsers(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)));
     }
 
     function openChat(id, u) {
@@ -161,11 +161,12 @@
         document.getElementById('head-avatar').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
         document.getElementById('scr-chat').classList.remove('hidden');
         
-        // Живое отслеживание статуса друга
+        // ЖИВОЙ СТАТУС В ЧАТЕ
         if(unsubStatus) unsubStatus();
         unsubStatus = db.collection("users").doc(id).onSnapshot(doc => {
             const data = doc.data();
-            document.getElementById('head-status').innerText = data.online ? "онлайн" : "был(а) недавно";
+            document.getElementById('head-status').innerText = data.online ? "в сети" : "не в сети";
+            document.getElementById('head-status').style.color = data.online ? "#4CAF50" : "gray";
         });
 
         loadMsgs();
@@ -196,29 +197,14 @@
         document.getElementById('msg-input').value = "";
     }
 
-    async function uploadImg(el) {
-        if(!el.files[0]) return;
-        const fd = new FormData(); fd.append("image", el.files[0]);
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
-        const json = await res.json();
-        if(json.success) {
-            const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-            await db.collection("chats").doc(cId).collection("messages").add({
-                sender: auth.currentUser.uid, url: json.data.url, type: 'img', time: firebase.firestore.FieldValue.serverTimestamp()
-            });
-        }
-    }
-
     async function uploadAvatar(el) {
         if(!el.files[0]) return;
         const fd = new FormData(); fd.append("image", el.files[0]);
         const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
         const json = await res.json();
         if(json.success) {
-            // ИСПРАВЛЕНО: обновляем только поле аватара
             await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
             document.getElementById('my-preview').src = json.data.url;
-            alert("Фото успешно изменено!");
         }
     }
 
@@ -233,17 +219,22 @@
         let taken = false;
         snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) taken = true; });
 
-        if(taken) { alert("Этот ник уже занят другим!"); btn.disabled = false; return; }
+        if(taken) { alert("Этот ник уже занят!"); btn.disabled = false; return; }
 
-        await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge:true});
-        alert("Сохранено!"); btn.disabled = false; toggleSets();
+        await db.collection("users").doc(auth.currentUser.uid).update({username: u, displayName: n});
+        alert("Данные сохранены!"); btn.disabled = false; toggleSets();
     }
 
     function addReact(r) { selectedDoc.ref.update({re: r}); closeActions(); }
     function deleteMsg() { if(confirm("Удалить?")) selectedDoc.ref.delete(); closeActions(); }
     function closeActions() { document.getElementById('action-sheet').classList.remove('open'); }
-    function backToList() { document.getElementById('scr-chat').classList.add('hidden'); if(unsubMsgs) unsubMsgs(); }
+    function backToList() { document.getElementById('scr-chat').classList.add('hidden'); if(unsubMsgs) unsubMsgs(); if(unsubStatus) unsubStatus(); }
     function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
+    
+    // Обновляем статус при закрытии вкладки
+    window.addEventListener('beforeunload', () => {
+        if(auth.currentUser) db.collection("users").doc(auth.currentUser.uid).update({online: false});
+    });
 </script>
 </body>
 </html>
