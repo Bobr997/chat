@@ -12,27 +12,45 @@
         :root { --main: #24A1DE; --bg: #8fb1ce; --light: #efffde; --gray: #8e8e93; --dark: #1c1c1e; }
         * { box-sizing: border-box; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         html, body { height: 100%; width: 100%; overflow: hidden; position: fixed; background: var(--bg); font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        /* Экран */
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 500; display: flex; flex-direction: column; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         .hidden { display: none !important; }
-        .chat-item { display: flex; align-items: center; padding: 16px; gap: 15px; border-bottom: 0.5px solid #efeff4; cursor: pointer; }
-        .chat-info b { display: block; font-size: 17px; color: #000; }
-        .chat-info p { font-size: 14px; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
-        .header { background: rgba(36, 161, 222, 0.95); backdrop-filter: blur(10px); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 64px; flex-shrink: 0; z-index: 100; }
+
+        /* Шапка */
+        .header { background: rgba(36, 161, 222, 0.95); backdrop-filter: blur(10px); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 64px; flex-shrink: 0; z-index: 100; box-shadow: 0 1px 10px rgba(0,0,0,0.1); }
         .avatar { width: 46px; height: 46px; border-radius: 50%; background: #f0f0f0; object-fit: cover; border: 1.5px solid rgba(255,255,255,0.4); }
+        
+        /* Список чатов */
+        .chat-item { display: flex; align-items: center; padding: 16px; gap: 15px; border-bottom: 0.5px solid #efeff4; cursor: pointer; }
+        .chat-item:active { background: #f2f2f7; }
+        .chat-info { flex: 1; }
+        .chat-info b { display: block; font-size: 17px; color: #000; margin-bottom: 2px; }
+        .chat-info p { font-size: 14px; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px; }
+
+        /* Сообщения */
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; background-size: cover; background-position: center; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; }
-        .status-online { color: #00ff00 !important; font-weight: bold; }
-        .status-offline { opacity: 0.8; font-size: 12px; }
         .msg-container { display: flex; flex-direction: column; max-width: 85%; position: relative; margin-bottom: 4px; }
         .msg { padding: 10px 16px; border-radius: 20px; font-size: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.12); position: relative; line-height: 1.45; word-wrap: break-word; }
         .my { align-self: flex-end; background: linear-gradient(135deg, #efffde, #e2f9cc); border-bottom-right-radius: 4px; }
         .other { align-self: flex-start; background: white; border-bottom-left-radius: 4px; }
         .reply-ref { background: rgba(0,0,0,0.05); border-left: 3px solid var(--main); padding: 5px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 13px; color: #555; }
-        .reaction-badge { position: absolute; bottom: -10px; right: 10px; background: white; border-radius: 12px; padding: 2px 6px; font-size: 14px; box-shadow: 0 3px 6px rgba(0,0,0,0.15); border: 0.5px solid #eee; }
-        .settings-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f2f2f7; z-index: 1000; transform: translateY(100%); transition: 0.4s; overflow-y: auto; }
+        .reaction-badge { position: absolute; bottom: -10px; right: 10px; background: white; border-radius: 12px; padding: 2px 6px; font-size: 14px; box-shadow: 0 3px 6px rgba(0,0,0,0.15); z-index: 5; border: 0.5px solid #eee; }
+        
+        /* Статусы */
+        .status-online { color: #00ff00 !important; font-weight: bold; }
+        .status-offline { opacity: 0.8; font-size: 12px; }
+
+        /* Настройки */
+        .settings-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f2f2f7; z-index: 1000; transform: translateY(100%); transition: 0.4s cubic-bezier(0.1, 0.7, 0.1, 1); padding: 0; overflow-y: auto; }
         .settings-overlay.open { transform: translateY(0); }
-        input, textarea { border: none; padding: 16px; background: white; border-radius: 14px; width: 100%; font-size: 17px; margin-bottom: 12px; }
-        .btn-main { background: var(--main); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 600; width: 100%; cursor: pointer; }
+        
+        /* Формы */
+        input, textarea { border: none; padding: 16px; background: white; border-radius: 14px; width: 100%; font-size: 17px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .btn-main { background: var(--main); color: white; border: none; padding: 18px; border-radius: 16px; font-weight: 600; width: 100%; font-size: 17px; cursor: pointer; }
+        
+        /* Действия */
         #action-sheet { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(255,255,255,0.92); backdrop-filter: blur(20px); border-radius: 25px 25px 0 0; padding: 25px; transform: translateY(100%); transition: 0.35s; z-index: 1200; }
         #action-sheet.open { transform: translateY(0); }
         .overlay-bg { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 1100; display: none; }
@@ -44,21 +62,22 @@
     <div id="auth-screen" class="screen" style="justify-content: center; padding: 40px;">
         <div style="text-align:center; margin-bottom:40px;">
             <div style="width:80px; height:80px; background:var(--main); border-radius:20px; margin:0 auto 20px; display:flex; align-items:center; justify-content:center; color:white; font-size:40px;">☁️</div>
-            <h1>Cloud Messenger</h1>
-            <p style="color:var(--gray);">Elite Edition Pro</p>
+            <h1 style="color:var(--dark);">Cloud Messenger</h1>
+            <p style="color:var(--gray); margin-top:5px;">Elite Edition Pro</p>
         </div>
         <input type="email" id="email" placeholder="Email">
         <input type="password" id="pass" placeholder="Пароль">
-        <button onclick="handleAuth()" class="btn-main">Войти</button>
+        <button onclick="handleAuth()" class="btn-main">Войти / Регистрация</button>
         <p id="st-log" style="text-align:center; font-size:13px; margin-top:20px; color:var(--gray);">Запуск...</p>
     </div>
 
     <div id="list-screen" class="screen hidden">
         <div class="header">
             <div onclick="toggleSettings()" style="cursor:pointer; font-size:24px;">☰</div>
-            <b style="flex:1; text-align:center;">Messenger</b>
+            <b style="font-size: 22px; flex:1; text-align:center; margin-left:-24px;">Messenger</b>
         </div>
-        <div id="chat-list" style="flex:1; overflow-y:auto;"></div>
+        <div style="padding:15px; background:#f9f9f9;"><input type="text" id="search-user" placeholder="Поиск @юзернейма..." onkeypress="if(event.key==='Enter') startChat()" style="margin:0; background:#eee;"></div>
+        <div id="chat-list" style="flex:1; overflow-y:auto; background:white;"></div>
     </div>
 
     <div id="chat-screen" class="screen hidden">
@@ -66,8 +85,8 @@
             <div onclick="backToList()" style="cursor:pointer; font-size:26px;">‹</div>
             <img id="chat-avatar-top" src="" class="avatar">
             <div style="flex:1">
-                <b id="chat-name-top">...</b><br>
-                <small id="chat-status" class="status-offline">оффлайн</small>
+                <b id="chat-name-top" style="font-size:17px;">...</b><br>
+                <small id="chat-status" class="status-offline">загрузка...</small>
             </div>
             <div onclick="changeChatBg()" style="cursor:pointer; font-size:22px;">🖼️</div>
         </div>
@@ -76,21 +95,25 @@
             <div id="reply-text-preview">Ответ на...</div>
             <div onclick="cancelReply()" style="cursor:pointer;">✕</div>
         </div>
-        <div style="padding:12px 16px 30px; display:flex; gap:12px; background:white; border-top:1px solid #eee; align-items:center;">
-            <label style="font-size:28px; cursor:pointer;">🖼️<input type="file" hidden onchange="sendPhoto(this)" accept="image/*"></label>
-            <input type="text" id="msg-text" placeholder="Сообщение" style="margin:0; background:#f0f0f7; border-radius:25px;">
+        <div style="padding:12px 16px 30px; display:flex; gap:12px; background:white; border-top:1px solid #f0f0f0; align-items:center;">
+            <label style="font-size:28px; cursor:pointer;">🖼️<input type="file" id="p-in" hidden onchange="sendPhoto(this)" accept="image/*"></label>
+            <input type="text" id="msg-text" placeholder="Сообщение" style="margin:0; background:#f0f0f7; border-radius:25px; padding:12px 20px;">
             <button onclick="sendMsg()" style="border:none; background:none; font-size:30px;">🚀</button>
         </div>
     </div>
 
     <div id="settings-menu" class="settings-overlay">
-        <div class="header" style="background:white; color:black;"><div onclick="toggleSettings()" style="cursor:pointer; font-size:26px;">✕</div><b style="flex:1; text-align:center;">Настройки</b></div>
+        <div class="header" style="background:white; color:black;">
+            <div onclick="toggleSettings()" style="cursor:pointer; font-size:26px;">✕</div>
+            <b style="flex:1; text-align:center; margin-left:-26px;">Настройки</b>
+        </div>
         <div style="padding:20px;">
-            <label style="display:block; text-align:center; margin-bottom:30px;">
-                <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:120px; height:120px; border-radius:30px; object-fit:cover;">
-                <input type="file" hidden onchange="updateAvatar(this)" accept="image/*">
+            <label style="display:block; text-align:center; margin-bottom:30px; position:relative;">
+                <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:130px; height:130px; border-radius:40px; object-fit:cover; box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+                <input type="file" id="ava-in" hidden onchange="updateAvatar(this)" accept="image/*">
+                <div style="position:absolute; bottom:5px; right:35%; background:var(--main); color:white; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:3px solid white;">✎</div>
             </label>
-            <input type="text" id="set-display-name" placeholder="Имя">
+            <input type="text" id="set-display-name" placeholder="Отображаемое имя">
             <input type="text" id="set-username" placeholder="Юзернейм @">
             <textarea id="set-bio" placeholder="О себе..."></textarea>
             <button onclick="saveProfile()" class="btn-main">Сохранить</button>
@@ -101,10 +124,10 @@
     <div id="overlay-bg" class="overlay-bg" onclick="closeActions()"></div>
     <div id="action-sheet">
         <div style="display:flex; justify-content:space-around; margin-bottom:20px; font-size:32px; border-bottom:1px solid #f0f0f0; padding-bottom:15px;">
-            <span onclick="setReact('👍')">👍</span><span onclick="setReact('❤️')">❤️</span><span onclick="setReact('🔥')">🔥</span><span onclick="setReact('😂')">😂</span>
+            <span onclick="setReact('👍')">👍</span><span onclick="setReact('❤️')">❤️</span><span onclick="setReact('🔥')">🔥</span><span onclick="setReact('😂')">😂</span><span onclick="setReact('😮')">😮</span>
         </div>
-        <div style="padding:15px; color:var(--main);" onclick="prepareReply()">💬 Ответить</div>
-        <div style="padding:15px; color:#ff3b30;" onclick="deleteMsg()">🗑 Удалить</div>
+        <div style="padding:15px; cursor:pointer; font-size:18px; color:var(--main);" onclick="prepareReply()">💬 Ответить</div>
+        <div style="padding:15px; cursor:pointer; font-size:18px; color:#ff3b30;" onclick="deleteMsg()">🗑 Удалить</div>
     </div>
 
     <script>
@@ -122,44 +145,55 @@
         const IMG_KEY = "0922d3e28da55ca6daee14cbe5073ae6";
         const notifySound = new Audio('https://fsa.zobj.net/download/f/6/d/f6d76168938716f2c6883b4c91c36f56.mp3');
 
-        function updateOnline(st) {
-            if(auth.currentUser) db.collection("users").doc(auth.currentUser.uid).set({online:st, lastSeen:firebase.firestore.FieldValue.serverTimestamp()}, {merge:true});
+        // Статус
+        function updateOnlineStatus(st) {
+            if(auth.currentUser) db.collection("users").doc(auth.currentUser.uid).set({
+                online: st, lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+            }, {merge:true});
         }
 
         window.onload = () => {
             auth.onAuthStateChanged(async user => {
-                document.getElementById('st-log').innerText = user ? "Загрузка данных..." : "Ожидание входа...";
+                const log = document.getElementById('st-log');
                 if(user) {
+                    log.innerText = "Авторизация...";
                     const doc = await db.collection("users").doc(user.uid).get();
-                    myData = doc.data() || {};
+                    myData = doc.data() || { username: "user" + Math.floor(Math.random()*9000) };
                     document.getElementById('set-display-name').value = myData.displayName || "";
                     document.getElementById('set-username').value = myData.username || "";
                     document.getElementById('set-bio').value = myData.bio || "";
                     if(myData.avatar) document.getElementById('edit-avatar').src = myData.avatar;
-                    updateOnline(true); switchScreen('list-screen'); loadUsers();
-                } else { switchScreen('auth-screen'); }
+                    updateOnlineStatus(true); switchScreen('list-screen'); loadUsers();
+                } else { switchScreen('auth-screen'); log.innerText = "Жду входа..."; }
             });
-            window.onfocus = () => updateOnline(true);
-            window.onblur = () => updateOnline(false);
+            window.addEventListener('focus', () => updateOnlineStatus(true));
+            window.addEventListener('blur', () => updateOnlineStatus(false));
         };
 
         async function uploadImg(file) {
             if(!file) return null;
             const fd = new FormData(); fd.append('image', file);
-            const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, {method:'POST', body:fd});
-            const j = await r.json(); return j.success ? j.data.url : null;
+            try {
+                const r = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method:'POST', body:fd });
+                const j = await r.json(); return j.success ? j.data.url : null;
+            } catch(e) { return null; }
         }
 
-        async function updateAvatar(i) {
-            const url = await uploadImg(i.files[0]);
-            if(url) { await db.collection("users").doc(auth.currentUser.uid).update({avatar:url}); document.getElementById('edit-avatar').src = url; alert("Готово!"); }
+        async function updateAvatar(input) {
+            const url = await uploadImg(input.files[0]);
+            if(url) {
+                await db.collection("users").doc(auth.currentUser.uid).update({avatar: url});
+                document.getElementById('edit-avatar').src = url;
+            }
         }
 
-        async function sendPhoto(i) {
-            const url = await uploadImg(i.files[0]);
+        async function sendPhoto(input) {
+            const url = await uploadImg(input.files[0]);
             if(url && activeChatId) {
                 const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-                await db.collection("chats").doc(cId).collection("messages").add({sender:auth.currentUser.uid, url:url, type:'image', time:firebase.firestore.FieldValue.serverTimestamp(), replyTo:replyText});
+                await db.collection("chats").doc(cId).collection("messages").add({
+                    sender: auth.currentUser.uid, url: url, replyTo: replyText, type: 'image', time: firebase.firestore.FieldValue.serverTimestamp()
+                });
                 cancelReply();
             }
         }
@@ -175,29 +209,29 @@
         function backToList() { switchScreen('list-screen'); if(unsubMsgs) unsubMsgs(); if(unsubStatus) unsubStatus(); }
 
         async function loadUsers() {
-            const snap = await db.collection("users").limit(50).get();
+            const snap = await db.collection("users").limit(40).get();
             const list = document.getElementById('chat-list'); list.innerHTML = "";
             snap.forEach(doc => {
                 if(doc.id === auth.currentUser.uid) return;
                 const u = doc.data(), item = document.createElement('div');
                 item.className = "chat-item";
-                item.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar"><div class="chat-info"><b>${u.displayName || u.username}</b><p>${u.bio || 'Начни чат'}</p></div>`;
+                item.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar"><div class="chat-info"><b>${u.displayName || u.username}</b><p>${u.bio || 'Нажмите, чтобы начать чат'}</p></div>`;
                 item.onclick = () => openChat(doc.id, u);
                 list.appendChild(item);
             });
         }
 
-        function openChat(id, u) {
+        function openChat(id, user) {
             activeChatId = id;
-            document.getElementById('chat-name-top').innerText = u.displayName || u.username;
-            document.getElementById('chat-avatar-top').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+            document.getElementById('chat-name-top').innerText = user.displayName || user.username;
+            document.getElementById('chat-avatar-top').src = user.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
             switchScreen('chat-screen'); loadMsgs(); watchStatus(id);
         }
 
         function watchStatus(id) {
             if(unsubStatus) unsubStatus();
-            unsubStatus = db.collection("users").doc(id).onSnapshot(d => {
-                const u = d.data(), el = document.getElementById('chat-status');
+            unsubStatus = db.collection("users").doc(id).onSnapshot(doc => {
+                const u = doc.data(), el = document.getElementById('chat-status');
                 if(!u) return;
                 if(u.online) { el.innerText = "в сети"; el.className = "status-online"; }
                 else { 
@@ -217,13 +251,12 @@
 
         function loadMsgs() {
             const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-            db.collection("chats").doc(cId).onSnapshot(d => {
+            db.collection("chats").doc(cId).onSnapshot(doc => {
                 const box = document.getElementById('messages');
-                if(d.exists && d.data().bg) box.style.backgroundImage = `url(${d.data().bg})`;
+                if(doc.exists && doc.data().bg) box.style.backgroundImage = `url(${doc.data().bg})`;
                 else box.style.backgroundImage = 'none';
             });
-
-            let first = true;
+            let firstLoad = true;
             if(unsubMsgs) unsubMsgs();
             unsubMsgs = db.collection("chats").doc(cId).collection("messages").orderBy("time","asc").onSnapshot(s => {
                 const box = document.getElementById('messages'); box.innerHTML = "";
@@ -239,28 +272,31 @@
                     box.appendChild(c);
                 });
                 box.scrollTop = box.scrollHeight;
-                if(!first && s.docChanges().some(x => x.type==='added' && x.doc.data().sender !== auth.currentUser.uid)) notifySound.play().catch(()=>{});
-                first = false;
+                if(!firstLoad && s.docChanges().some(ch => ch.type==='added' && ch.doc.data().sender !== auth.currentUser.uid)) notifySound.play().catch(()=>{});
+                firstLoad = false;
             });
         }
 
         async function saveProfile() {
-            await db.collection("users").doc(auth.currentUser.uid).set({username:document.getElementById('set-username').value, displayName:document.getElementById('set-display-name').value, bio:document.getElementById('set-bio').value}, {merge:true});
-            alert("Elite!"); toggleSettings(); loadUsers();
+            await db.collection("users").doc(auth.currentUser.uid).set({
+                username: document.getElementById('set-username').value.trim().toLowerCase(),
+                displayName: document.getElementById('set-display-name').value.trim(),
+                bio: document.getElementById('set-bio').value.trim()
+            }, {merge:true});
+            toggleSettings(); loadUsers();
         }
 
         async function sendMsg() {
-            const t = document.getElementById('msg-text').value; if(!t) return;
+            const t = document.getElementById('msg-text').value; if(!t || !activeChatId) return;
             const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-            await db.collection("chats").doc(cId).collection("messages").add({sender:auth.currentUser.uid, text:t, replyTo:replyText, type:'text', time:firebase.firestore.FieldValue.serverTimestamp()});
+            await db.collection("chats").doc(cId).collection("messages").add({
+                sender: auth.currentUser.uid, text: t, replyTo: replyText, type: 'text', time: firebase.firestore.FieldValue.serverTimestamp()
+            });
             document.getElementById('msg-text').value = ""; cancelReply();
         }
 
-        window.setReact = async (r) => { await selectedDoc.ref.update({react:r}); closeActions(); };
+        window.setReact = async (e) => { await selectedDoc.ref.update({react: e}); closeActions(); };
         window.prepareReply = () => { replyText = selectedDoc.data().text || "Фото"; document.getElementById('reply-preview').classList.remove('hidden'); document.getElementById('reply-text-preview').innerText = "Ответ на: " + replyText; closeActions(); };
         window.cancelReply = () => { replyText = null; document.getElementById('reply-preview').classList.add('hidden'); };
         window.deleteMsg = async () => { if(confirm("Удалить?")) await selectedDoc.ref.delete(); closeActions(); };
-        window.closeActions = () => { document.getElementById('action-sheet').classList.remove('open'); document.getElementById('overlay-bg').style.display='none'; };
-    </script>
-</body>
-</html>
+        window.closeActions = () => { document.getElementById('action-sheet').classList.remove('open'); document.getElementById('overlay-bg').style.display=
