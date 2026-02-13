@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Pro Max Full Ultra</title>
+    <title>Telegram Pro Max Ultra Full</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -21,7 +21,7 @@
         .hidden { display: none !important; }
 
         /* Настройки */
-        .settings-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 200; transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; overflow-y: auto; }
+        .settings-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 200; transform: translateX(-100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .settings-overlay.open { transform: translateX(0); }
 
         /* Шапка */
@@ -50,7 +50,7 @@
 
         /* Ввод */
         .input-area { background: white; padding: 10px; border-top: 1px solid #ddd; }
-        input, textarea { border: none; outline: none; padding: 12px; background: #f1f1f1; border-radius: 12px; width: 100%; }
+        input, textarea { border: none; outline: none; padding: 12px; background: #f1f1f1; border-radius: 12px; width: 100%; font-size: 16px; }
         .btn-main { background: var(--main); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 5px; }
         .reply-preview-bar { background: white; padding: 8px 15px; border-top: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--main); }
     </style>
@@ -68,23 +68,24 @@
         <div id="settings-menu" class="settings-overlay">
             <div style="display: flex; align-items: center; gap: 20px;">
                 <span style="font-size: 30px; cursor: pointer;" onclick="toggleSettings()">←</span>
-                <h2 style="margin:0">Настройки</h2>
+                <h2 style="margin:0">Профиль</h2>
             </div>
             <label style="text-align:center">
-                <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:120px; height:120px; border-radius:50%; object-fit:cover; border:3px solid var(--main); cursor:pointer;">
+                <img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" style="width:110px; height:110px; border-radius:50%; object-fit:cover; border:3px solid var(--main); cursor:pointer;">
                 <input type="file" id="avatar-file" hidden onchange="updateAvatar(this)">
             </label>
-            <label>Ник:</label>
+            <label>Ваше Имя (Ник):</label>
             <input type="text" id="set-display-name">
             <label>Юзернейм (@):</label>
-            <input type="text" id="set-username">
+            <input type="text" id="set-username" placeholder="Только a-z, 0-9, _">
             <label>О себе:</label>
-            <textarea id="set-bio" rows="3"></textarea>
+            <textarea id="set-bio" rows="2"></textarea>
             <button onclick="saveProfile()" class="btn-main">Сохранить</button>
             <button onclick="auth.signOut()" class="btn-main" style="background:#ff4d4d; margin-top:5px;">Выйти</button>
         </div>
 
         <div id="overlay" class="sheet-overlay" onclick="closeActionMenu()"></div>
+        
         <div id="action-sheet">
             <div class="reactions-row">
                 <span onclick="setReaction('👍')">👍</span> <span onclick="setReaction('❤️')">❤️</span> <span onclick="setReaction('🔥')">🔥</span> <span onclick="setReaction('😂')">😂</span> <span onclick="setReaction('😮')">😮</span>
@@ -141,6 +142,7 @@
 
         async function handleAuth() {
             const e = document.getElementById('email').value, p = document.getElementById('pass').value;
+            if(!e || !p) return alert("Заполни данные!");
             await auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
         }
 
@@ -151,19 +153,21 @@
                 const doc = await db.collection("users").doc(user.uid).get();
                 myData = doc.data() || { username: "user_" + user.uid.slice(0,4) };
                 
+                // Автозаполнение
                 document.getElementById('display-name-top').innerText = myData.displayName || myData.username;
                 document.getElementById('set-display-name').value = myData.displayName || "";
                 document.getElementById('set-username').value = myData.username || "";
                 document.getElementById('set-bio').value = myData.bio || "";
                 if(myData.avatar) document.getElementById('edit-avatar').src = myData.avatar;
 
-                db.collection("users").doc(user.uid).update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
-            } else {
-                document.getElementById('auth-screen').classList.remove('hidden');
-                document.getElementById('app').classList.add('hidden');
-            }
+                db.collection("users").doc(user.uid).set(myData, {merge:true});
+                setInterval(() => {
+                    db.collection("users").doc(user.uid).update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                }, 30000);
+            } else { location.reload(); }
         });
 
+        // Фильтр на юзернейм
         document.getElementById('set-username').addEventListener('input', function() {
             this.value = this.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
         });
@@ -172,12 +176,19 @@
         
         async function saveProfile() {
             const u = document.getElementById('set-username').value.trim();
-            if(u.length < 3) return alert("Короткий ник");
+            if(u.length < 3) return alert("Слишком короткий юзернейм!");
+
+            // ПРОВЕРКА НА УНИКАЛЬНОСТЬ
+            const snap = await db.collection("users").where("username", "==", u).get();
+            if(!snap.empty && snap.docs[0].id !== auth.currentUser.uid) {
+                return alert("Этот юзернейм уже занят!");
+            }
+
             await db.collection("users").doc(auth.currentUser.uid).update({
                 displayName: document.getElementById('set-display-name').value,
                 username: u, bio: document.getElementById('set-bio').value
             });
-            alert("Ок!"); toggleSettings();
+            alert("Профиль обновлен!"); toggleSettings();
         }
 
         async function updateAvatar(input) {
@@ -194,7 +205,7 @@
         async function startChat() {
             const target = document.getElementById('search-user').value.toLowerCase().replace('@','').trim();
             const snap = await db.collection("users").where("username", "==", target).get();
-            if(snap.empty) return alert("Не найден");
+            if(snap.empty) return alert("Пользователь не найден");
             activeChatId = snap.docs[0].id;
             const u = snap.docs[0].data();
             document.getElementById('display-name-top').innerText = u.displayName || u.username;
