@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Pro Max Full</title>
+    <title>Telegram Pro Max Ultra</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
@@ -18,6 +18,7 @@
 
         .header { background: var(--main); color: white; padding: 10px 15px; display: flex; align-items: center; gap: 12px; z-index: 5; }
         .avatar { width: 40px; height: 40px; border-radius: 50%; background: #ddd; object-fit: cover; }
+        .online-dot { width: 12px; height: 12px; background: #4df34d; border-radius: 50%; border: 2px solid white; position: absolute; bottom: 0; right: 0; }
 
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; display: flex; flex-direction: column; gap: 12px; }
         .msg-container { display: flex; flex-direction: column; position: relative; max-width: 85%; }
@@ -25,27 +26,29 @@
         .my { align-self: flex-end; background: var(--light); border-bottom-right-radius: 2px; }
         .other { align-self: flex-start; background: white; border-bottom-left-radius: 2px; }
         
+        /* Ответы и Реакции */
+        .reply-box { background: rgba(0,0,0,0.07); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 5px; border-radius: 4px; font-size: 12px; opacity: 0.8; }
         .reaction-badge { position: absolute; bottom: -8px; right: 8px; background: white; border-radius: 10px; padding: 1px 5px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
         .time { font-size: 10px; color: gray; margin-top: 4px; align-self: flex-end; }
 
-        /* МЕНЮ НАСТРОЕК */
+        /* Интерфейс настроек и меню */
         .settings-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: white; z-index: 150; transform: translateX(-100%); transition: 0.3s; padding: 20px; overflow-y: auto; }
         .settings-overlay.open { transform: translateX(0); }
         .profile-pic-edit { width: 110px; height: 110px; border-radius: 50%; border: 3px solid var(--main); display: block; margin: 0 auto 10px; cursor: pointer; object-fit: cover; }
 
-        /* ВЫЕЗЖАЮЩЕЕ МЕНЮ РЕАКЦИЙ */
-        #action-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 20px 20px 0 0; padding: 20px; transform: translateY(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); }
+        #action-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-radius: 20px 20px 0 0; padding: 20px; transform: translateY(100%); transition: 0.3s; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.2); }
         #action-sheet.open { transform: translateY(0); }
         .sheet-overlay { position: absolute; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.4); z-index: 90; display: none; }
         .sheet-overlay.show { display: block; }
 
-        .reactions-row { display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 28px; }
-        .sheet-btn { display: flex; align-items: center; gap: 15px; padding: 15px; font-size: 17px; cursor: pointer; border-radius: 10px; }
-        .sheet-btn:active { background: #f0f0f0; }
+        .reactions-row { display: flex; justify-content: space-around; margin-bottom: 15px; font-size: 26px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .sheet-btn { display: flex; align-items: center; gap: 15px; padding: 12px; font-size: 16px; cursor: pointer; border-radius: 10px; }
+        
+        .reply-preview-bar { background: white; padding: 8px 15px; border-top: 1px solid #ddd; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--main); }
 
-        .input-area { background: white; padding: 10px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #ddd; }
+        .input-area { background: white; padding: 10px; border-top: 1px solid #ddd; }
+        .input-row { display: flex; align-items: center; gap: 10px; }
         input, textarea { border: none; outline: none; padding: 12px; background: #f1f1f1; border-radius: 12px; width: 100%; margin-bottom: 10px; }
-        .hidden { display: none !important; }
         .btn-main { background: var(--main); color: white; border: none; padding: 15px; border-radius: 15px; font-weight: bold; width: 100%; cursor: pointer; }
     </style>
 </head>
@@ -63,10 +66,10 @@
             <span style="font-size: 28px; cursor: pointer;" onclick="toggleSettings()">←</span>
             <h3 style="text-align:center;">Профиль</h3>
             <label><img id="edit-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="profile-pic-edit"><input type="file" id="avatar-file" hidden onchange="updateAvatar(this)"></label>
-            <label>Ник:</label><input type="text" id="set-display-name">
-            <label>Юзернейм (@):</label><input type="text" id="set-username">
-            <label>О себе:</label><textarea id="set-bio" rows="3"></textarea>
-            <button onclick="saveProfile()" class="btn-main">Сохранить всё</button>
+            <input type="text" id="set-display-name" placeholder="Ник">
+            <input type="text" id="set-username" placeholder="Юзернейм @">
+            <textarea id="set-bio" placeholder="О себе..."></textarea>
+            <button onclick="saveProfile()" class="btn-main">Сохранить</button>
             <button onclick="auth.signOut()" class="btn-main" style="background:#ff4d4d; margin-top:10px;">Выйти</button>
         </div>
 
@@ -76,6 +79,7 @@
             <div class="reactions-row">
                 <span onclick="setReaction('👍')">👍</span> <span onclick="setReaction('❤️')">❤️</span> <span onclick="setReaction('🔥')">🔥</span> <span onclick="setReaction('😂')">😂</span> <span onclick="setReaction('😮')">😮</span>
             </div>
+            <div class="sheet-btn" onclick="prepareReply()">💬 Ответить</div>
             <div id="my-actions">
                 <div class="sheet-btn" onclick="editMsg()">✏️ Редактировать</div>
                 <div class="sheet-btn" style="color:red" onclick="deleteMsg()">🗑 Удалить</div>
@@ -84,20 +88,31 @@
 
         <div class="header">
             <div onclick="toggleSettings()" style="cursor:pointer; font-size: 24px;">☰</div>
-            <img id="chat-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar">
+            <div style="position: relative;">
+                <img id="chat-avatar" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar">
+                <div id="online-indicator" class="online-dot hidden"></div>
+            </div>
             <div class="header-info">
                 <b id="display-name-top">Загрузка...</b>
-                <span id="chat-status">выберите собеседника</span>
+                <span id="chat-status">выберите чат</span>
             </div>
         </div>
 
         <div style="padding: 10px; background: white;"><input type="text" id="search-user" placeholder="Поиск @юзернейма..." onkeypress="if(event.key==='Enter') startChat()" style="margin:0"></div>
+        
         <div id="messages"></div>
 
+        <div id="reply-preview" class="reply-preview-bar hidden">
+            <div id="reply-text-preview">Ответ на сообщение...</div>
+            <div onclick="cancelReply()" style="cursor:pointer">✖️</div>
+        </div>
+
         <div id="chat-controls" class="input-area hidden">
-            <label style="font-size: 24px; cursor: pointer;">🖼<input type="file" hidden onchange="sendPhoto(this)"></label>
-            <input type="text" id="msg-text" placeholder="Сообщение..." style="margin:0">
-            <div style="font-size: 24px; cursor: pointer;" onclick="sendMsg()">🚀</div>
+            <div class="input-row">
+                <label style="font-size: 24px; cursor: pointer;">🖼<input type="file" hidden onchange="sendPhoto(this)"></label>
+                <input type="text" id="msg-text" placeholder="Сообщение..." style="margin:0">
+                <div style="font-size: 24px; cursor: pointer;" onclick="sendMsg()">🚀</div>
+            </div>
         </div>
     </div>
 
@@ -112,15 +127,11 @@
         };
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth(), db = firebase.firestore();
-        let activeChatId = null, unsub = null, selectedMsgDoc = null, myData = {};
+        let activeChatId = null, unsub = null, selectedMsgDoc = null, replyingTo = null, myData = {};
 
         async function handleAuth() {
             const e = document.getElementById('email').value, p = document.getElementById('pass').value;
-            try { await auth.signInWithEmailAndPassword(e, p); } 
-            catch {
-                const res = await auth.createUserWithEmailAndPassword(e, p);
-                await db.collection("users").doc(res.user.uid).set({username: "id"+Math.floor(Math.random()*9999), displayName: "User", bio: "", avatar: ""});
-            }
+            await auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
         }
 
         auth.onAuthStateChanged(async user => {
@@ -128,36 +139,36 @@
                 document.getElementById('auth-screen').classList.add('hidden');
                 document.getElementById('app').classList.remove('hidden');
                 const doc = await db.collection("users").doc(user.uid).get();
-                myData = doc.data();
-                document.getElementById('display-name-top').innerText = myData.displayName || myData.username;
-                document.getElementById('set-display-name').value = myData.displayName;
-                document.getElementById('set-username').value = myData.username;
-                document.getElementById('set-bio').value = myData.bio;
+                myData = doc.data() || {};
+                // Обновляем статус онлайн
+                db.collection("users").doc(user.uid).update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+                
+                document.getElementById('display-name-top').innerText = myData.displayName || myData.username || "User";
+                document.getElementById('set-display-name').value = myData.displayName || "";
+                document.getElementById('set-username').value = myData.username || "";
+                document.getElementById('set-bio').value = myData.bio || "";
                 if(myData.avatar) document.getElementById('edit-avatar').src = myData.avatar;
             } else { location.reload(); }
         });
 
         function toggleSettings() { document.getElementById('settings-menu').classList.toggle('open'); }
         
+        async function saveProfile() {
+            const u = document.getElementById('set-username').value.toLowerCase().replace(/[^a-z0-9]/g, '');
+            await db.collection("users").doc(auth.currentUser.uid).update({
+                displayName: document.getElementById('set-display-name').value,
+                username: u, bio: document.getElementById('set-bio').value
+            });
+            alert("Сохранено!"); location.reload();
+        }
+
         async function updateAvatar(input) {
             const file = input.files[0]; if(!file) return;
             const formData = new FormData(); formData.append('image', file);
             const res = await fetch('https://api.imgbb.com/1/upload?key=604369e88849646c107106c6e7371192', { method: 'POST', body: formData });
             const json = await res.json();
-            if(json.success) {
-                await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
-                document.getElementById('edit-avatar').src = json.data.url;
-            }
-        }
-
-        async function saveProfile() {
-            const u = document.getElementById('set-username').value.toLowerCase().replace(/[^a-z0-9]/g, '');
-            await db.collection("users").doc(auth.currentUser.uid).update({
-                displayName: document.getElementById('set-display-name').value,
-                username: u,
-                bio: document.getElementById('set-bio').value
-            });
-            alert("Сохранено!"); location.reload();
+            if(json.success) await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
+            location.reload();
         }
 
         async function startChat() {
@@ -168,7 +179,13 @@
             const u = snap.docs[0].data();
             document.getElementById('display-name-top').innerText = u.displayName || u.username;
             document.getElementById('chat-avatar').src = u.avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
-            document.getElementById('chat-status').innerText = u.bio || "online";
+            
+            if(u.lastSeen) {
+                const isOnline = (Date.now() - u.lastSeen.seconds*1000) < 60000;
+                document.getElementById('chat-status').innerText = isOnline ? "в сети" : "был недавно";
+                document.getElementById('online-indicator').classList.toggle('hidden', !isOnline);
+            }
+            
             document.getElementById('chat-controls').classList.remove('hidden');
             loadMsgs();
         }
@@ -183,10 +200,14 @@
                     const cont = document.createElement('div');
                     cont.className = "msg-container " + (m.sender === auth.currentUser.uid ? "my" : "other");
                     const timeStr = m.time ? new Date(m.time.seconds*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "";
-                    cont.innerHTML = `<div class="msg ${m.sender === auth.currentUser.uid ? 'my' : 'other'}">
-                        ${m.type === 'image' ? `<img src="${m.url}" style="max-width:100%; border-radius:10px;">` : m.text}
-                        ${m.reaction ? `<div class="reaction-badge">${m.reaction}</div>` : ''}
-                    </div><div class="time">${m.edited ? 'изм. ' : ''}${timeStr}</div>`;
+                    
+                    cont.innerHTML = `
+                        <div class="msg ${m.sender === auth.currentUser.uid ? 'my' : 'other'}">
+                            ${m.replyTo ? `<div class="reply-box"><b>Ответ:</b> ${m.replyTo}</div>` : ''}
+                            ${m.type === 'image' ? `<img src="${m.url}" style="max-width:100%; border-radius:10px;">` : m.text}
+                            ${m.reaction ? `<div class="reaction-badge">${m.reaction}</div>` : ''}
+                        </div>
+                        <div class="time">${m.edited ? 'изм. ' : ''}${timeStr}</div>`;
                     cont.onclick = () => { selectedMsgDoc = d; openActionMenu(m); };
                     box.appendChild(cont);
                 });
@@ -202,6 +223,15 @@
 
         function closeActionMenu() { document.getElementById('action-sheet').classList.remove('open'); document.getElementById('overlay').classList.remove('show'); }
 
+        function prepareReply() {
+            replyingTo = selectedMsgDoc.data().text || "Фото";
+            document.getElementById('reply-preview').classList.remove('hidden');
+            document.getElementById('reply-text-preview').innerText = "Ответ на: " + replyingTo;
+            closeActionMenu();
+        }
+
+        function cancelReply() { replyingTo = null; document.getElementById('reply-preview').classList.add('hidden'); }
+
         async function setReaction(emoji) { await selectedMsgDoc.ref.update({reaction: emoji}); closeActionMenu(); }
         async function deleteMsg() { if(confirm("Удалить?")) await selectedMsgDoc.ref.delete(); closeActionMenu(); }
         async function editMsg() {
@@ -213,8 +243,10 @@
         async function sendMsg() {
             const t = document.getElementById('msg-text').value; if(!t || !activeChatId) return;
             const id = [auth.currentUser.uid, activeChatId].sort().join("_");
-            await db.collection("chats").doc(id).collection("messages").add({sender:auth.currentUser.uid, text:t, type:'text', time: firebase.firestore.FieldValue.serverTimestamp()});
-            document.getElementById('msg-text').value = "";
+            await db.collection("chats").doc(id).collection("messages").add({
+                sender: auth.currentUser.uid, text: t, replyTo: replyingTo, type: 'text', time: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('msg-text').value = ""; cancelReply();
         }
 
         async function sendPhoto(input) {
@@ -224,7 +256,10 @@
             const json = await res.json();
             if(json.success) {
                 const id = [auth.currentUser.uid, activeChatId].sort().join("_");
-                await db.collection("chats").doc(id).collection("messages").add({sender: auth.currentUser.uid, url: json.data.url, type: 'image', time: firebase.firestore.FieldValue.serverTimestamp()});
+                await db.collection("chats").doc(id).collection("messages").add({
+                    sender: auth.currentUser.uid, url: json.data.url, replyTo: replyingTo, type: 'image', time: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                cancelReply();
             }
         }
     </script>
