@@ -42,7 +42,7 @@
         <b style="flex:1; text-align:center">Мессенджер</b>
     </div>
     <div style="padding:10px; background:#fff; border-bottom:1px solid #eee;">
-        <input type="text" id="user-search" placeholder="Поиск ника @..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+        <input type="text" id="user-search" placeholder="Поиск ника..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
     </div>
     <div id="chat-list-container" style="overflow-y:auto; flex:1"></div>
 </div>
@@ -115,7 +115,7 @@
             document.getElementById('scr-list').classList.remove('hidden');
             document.getElementById('scr-auth').classList.add('hidden');
             
-            loadMyChats(); // Загружаем только МОИ чаты
+            loadMyChats(); 
             db.collection("users").doc(user.uid).set({online: true}, {merge: true});
         } else {
             document.getElementById('scr-auth').classList.remove('hidden');
@@ -133,14 +133,11 @@
         auth.signOut();
     }
 
-    // Загрузка только тех пользователей, с кем УЖЕ есть переписка
     function loadMyChats() {
-        // Подгружаем всех пользователей в память один раз для поиска
         db.collection("users").onSnapshot(snap => {
             allUsers = [];
             snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) allUsers.push({id: doc.id, ...doc.data()}); });
             
-            // Теперь ищем активные чаты в коллекции chats
             db.collection("chats").onSnapshot(snapChats => {
                 myActiveChats = [];
                 snapChats.forEach(chatDoc => {
@@ -150,16 +147,13 @@
                         if(userData) myActiveChats.push(userData);
                     }
                 });
-                renderUsers(myActiveChats); // Показываем только активные
+                renderUsers(myActiveChats);
             });
         });
     }
 
     function renderUsers(list) {
         const box = document.getElementById('chat-list-container'); box.innerHTML = "";
-        if(list.length === 0) {
-            box.innerHTML = "<p style='text-align:center; color:gray; padding:20px'>Нет активных чатов. Найдите друга через поиск!</p>";
-        }
         list.forEach(u => {
             const d = document.createElement('div');
             d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
@@ -173,10 +167,7 @@
 
     function filterUsers() {
         const q = document.getElementById('user-search').value.toLowerCase().trim();
-        if(q === "") {
-            renderUsers(myActiveChats); // Если поиск пуст, возвращаем список своих чатов
-            return;
-        }
+        if(q === "") { renderUsers(myActiveChats); return; }
         const filtered = allUsers.filter(u => 
             (u.displayName && u.displayName.toLowerCase().includes(q)) || 
             (u.username && u.username.toLowerCase().includes(q))
@@ -189,7 +180,6 @@
         document.getElementById('head-name').innerText = u.displayName || u.username;
         document.getElementById('head-avatar').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
         document.getElementById('scr-chat').classList.remove('hidden');
-        
         if(unsubStatus) unsubStatus();
         unsubStatus = db.collection("users").doc(id).onSnapshot(doc => {
             if(doc.exists) {
@@ -222,10 +212,7 @@
     async function sendMsg() {
         const t = document.getElementById('msg-input').value; if(!t || !activeChatId) return;
         const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-        
-        // Создаем документ чата, если его нет (чтобы он появился в списке)
         await db.collection("chats").doc(cId).set({ lastUpdate: firebase.firestore.FieldValue.serverTimestamp() }, {merge: true});
-        
         await db.collection("chats").doc(cId).collection("messages").add({
             sender: auth.currentUser.uid, 
             text: t, 
@@ -237,20 +224,18 @@
     async function uploadImg(el) {
         if(!el.files[0] || !activeChatId) return;
         const fd = new FormData(); fd.append("image", el.files[0]);
-        try {
-            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
-            const json = await res.json();
-            if(json.success) {
-                const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
-                await db.collection("chats").doc(cId).set({ lastUpdate: firebase.FieldValue.serverTimestamp() }, {merge: true});
-                await db.collection("chats").doc(cId).collection("messages").add({
-                    sender: auth.currentUser.uid, 
-                    type: 'img', 
-                    url: json.data.url, 
-                    time: firebase.firestore.FieldValue.serverTimestamp()
-                });
-            }
-        } catch (e) { console.error(e); }
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
+        const json = await res.json();
+        if(json.success) {
+            const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
+            await db.collection("chats").doc(cId).set({ lastUpdate: firebase.firestore.FieldValue.serverTimestamp() }, {merge: true});
+            await db.collection("chats").doc(cId).collection("messages").add({
+                sender: auth.currentUser.uid, 
+                type: 'img', 
+                url: json.data.url, 
+                time: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        }
         el.value = "";
     }
 
@@ -271,13 +256,10 @@
         const btn = document.getElementById('btn-save');
         if(!u) return alert("Введите ник!");
         btn.disabled = true;
-
         const snap = await db.collection("users").where("username", "==", u).get();
         let taken = false;
         snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) taken = true; });
-
         if(taken) { alert("Этот ник уже занят!"); btn.disabled = false; return; }
-
         await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge: true});
         alert("Данные сохранены!"); btn.disabled = false; toggleSets();
     }
