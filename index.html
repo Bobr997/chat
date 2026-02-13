@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Chat</title>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root { --main: #24A1DE; --bg: #8fb1ce; --light: #efffde; }
+        * { box-sizing: border-box; transition: 0.2s; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; align-items: center; justify-content: center; }
+        
+        /* Карточки */
+        .card { background: white; width: 95%; max-width: 400px; padding: 25px; border-radius: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); }
+        #app { height: 90vh; display: none; flex-direction: column; overflow: hidden; padding: 0; }
+        
+        /* Поля и кнопки */
+        input { width: 100%; padding: 14px; margin: 8px 0; border: 1px solid #ddd; border-radius: 12px; font-size: 16px; outline: none; background: #fdfdfd; }
+        input:focus { border-color: var(--main); box-shadow: 0 0 5px rgba(36,161,222,0.3); }
+        button { width: 100%; padding: 14px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .btn-blue { background: var(--main); color: white; }
+        .btn-blue:active { transform: scale(0.98); }
+        
+        /* Интерфейс чата */
+        .header { background: var(--main); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .settings-panel { padding: 15px; background: #f0f4f7; border-bottom: 1px solid #ddd; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; background: #e6eef3; }
+        .msg { padding: 10px 15px; border-radius: 15px; max-width: 85%; font-size: 14px; position: relative; line-height: 1.4; }
+        .msg.my { align-self: flex-end; background: var(--light); border-bottom-right-radius: 4px; border: 1px solid #c8e6a1; }
+        .msg.other { align-self: flex-start; background: white; border-bottom-left-radius: 4px; border: 1px solid #ddd; }
+        
+        .error-text { color: #ff4d4d; font-size: 13px; text-align: center; margin-bottom: 5px; }
+        .hidden { display: none !important; }
+        .back-btn { font-size: 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="card">
+        <h2 style="text-align: center;">Вход</h2>
+        <input type="email" id="login-email" placeholder="Email">
+        <input type="password" id="login-pass" placeholder="Пароль">
+        <div id="login-error" class="error-text"></div>
+        <button class="btn-blue" id="login-btn" onclick="handleAuth('login')">Войти</button>
+        <button style="background:none; color:var(--main); margin-top:10px;" onclick="showScreen('reg')">Создать аккаунт</button>
+    </div>
+
+    <div id="reg-screen" class="card hidden">
+        <h2 style="text-align: center;">Регистрация</h2>
+        <input type="email" id="reg-email" placeholder="Email">
+        <input type="password" id="reg-pass" placeholder="Пароль">
+        <div id="reg-error" class="error-text"></div>
+        <button class="btn-blue" id="reg-btn" onclick="handleAuth('reg')">Зарегистрироваться</button>
+        <button style="background:none; color:var(--main); margin-top:10px;" onclick="showScreen('login')">Есть аккаунт? Войти</button>
+    </div>
+
+    <div id="app" class="card">
+        <div class="header">
+            <span id="user-nick" style="font-weight: bold;">@loading...</span>
+            <span class="back-btn" onclick="toggleSettings()">⚙️</span>
+        </div>
+
+        <div id="settings" class="settings-panel hidden">
+            <label style="font-size: 12px; color: #666;">Сменить ник:</label>
+            <div style="display:flex; gap:5px;">
+                <input type="text" id="new-nick" placeholder="Новый ник" style="margin:0;">
+                <button class="btn-blue" style="width: auto; padding: 5px 15px;" onclick="changeUsername()">ОК</button>
+            </div>
+            <button onclick="auth.signOut()" style="background:#ff4d4d; color:white; margin-top:10px; padding:8px;">Выйти из аккаунта</button>
+        </div>
+
+        <div style="padding: 10px; background: white;">
+            <input type="text" id="search-user" placeholder="Поиск друга по @нику..." onkeypress="if(event.key==='Enter') startChat()">
+        </div>
+
+        <div id="messages">Найдите друга, чтобы начать чат</div>
+
+        <div id="chat-box" class="hidden" style="padding:10px; background: white; display:flex; gap:5px; border-top: 1px solid #eee;">
+            <input type="text" id="msg-text" placeholder="Сообщение..." style="margin:0;" onkeypress="if(event.key==='Enter') sendMsg()">
+            <button class="btn-blue" style="width:60px; margin:0;" onclick="sendMsg()">🚀</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCuDXnXksaxGp_-Oml82uuymgXNRDRS37Y",
+            authDomain: "mymessenger-2b9d0.firebaseapp.com",
+            projectId: "mymessenger-2b9d0",
+            storageBucket: "mymessenger-2b9d0.firebasestorage.app",
+            messagingSenderId: "1023277743941",
+            appId: "1:1023277743941:web:ae94eaed1c12b30795082c"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        function showScreen(scr) {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('reg-screen').classList.add('hidden');
+            if(scr === 'login') document.getElementById('login-screen').classList.remove('hidden');
+            if(scr === 'reg') document.getElementById('reg-screen').classList.remove('hidden');
+        }
+
+        async function handleAuth(type) {
+            const email = document.getElementById(type + '-email').value.trim();
+            const pass = document.getElementById(type + '-pass').value.trim();
+            const errDiv = document.getElementById(type + '-error');
+            const btn = document.getElementById(type + '-btn');
+            
+            if(!email || !pass) return errDiv.innerText = "Заполни все поля!";
+            btn.disabled = true;
+
+            try {
+                if(type === 'reg') {
+                    const res = await auth.createUserWithEmailAndPassword(email, pass);
+                    // Генерируем случайный ник
+                    const randomNick = "user_" + Math.floor(Math.random() * 9999);
+                    await db.collection("users").doc(res.user.uid).set({
+                        username: randomNick.toLowerCase(),
+                        email: email
+                    });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, pass);
+                }
+            } catch (e) {
+                errDiv.innerText = "Ошибка: " + e.message;
+                btn.disabled = false;
+            }
+        }
+
+        async function changeUsername() {
+            const newNick = document.getElementById('new-nick').value.toLowerCase().trim();
+            if(newNick.length < 3) return alert("Ник слишком короткий!");
+
+            // Проверка на уникальность
+            const snap = await db.collection("users").where("username", "==", newNick).get();
+            if(!snap.empty) return alert("Этот ник уже занят!");
+
+            await db.collection("users").doc(auth.currentUser.uid).update({ username: newNick });
+            document.getElementById('user-nick').innerText = "@" + newNick;
+            alert("Ник изменен!");
+            toggleSettings();
+        }
+
+        function toggleSettings() {
+            document.getElementById('settings').classList.toggle('hidden');
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                document.getElementById('app').style.display = 'flex';
+                showScreen('none');
+                const doc = await db.collection("users").doc(user.uid).get();
+                if(doc.exists) document.getElementById('user-nick').innerText = "@" + doc.data().username;
+            } else {
+                document.getElementById('app').style.display = 'none';
+                showScreen('login');
+            }
+        });
+
+        // ЛОГИКА ЧАТА (без изменений)
+        let activeChatId = null;
+        let unsub = null;
+
+        async function startChat() {
+            const nick = document.getElementById('search-user').value.toLowerCase().trim();
+            const snap = await db.collection("users").where("username", "==", nick).get();
+            if(snap.empty) return alert("Юзер не найден");
+            activeChatId = snap.docs[0].id;
+            document.getElementById('chat-box').classList.remove('hidden');
+            loadMsgs();
+        }
+
+        function loadMsgs() {
+            if(unsub) unsub();
+            const id = [auth.currentUser.uid, activeChatId].sort().join("_");
+            unsub = db.collection("chats").doc(id).collection("messages").orderBy("time","asc").onSnapshot(s => {
+                const c = document.getElementById('messages');
+                c.innerHTML = "";
+                s.forEach(d => {
+                    const m = d.data();
+                    const div = document.createElement('div');
+                    div.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
+                    div.innerText = m.text;
+                    c.appendChild(div);
+                });
+                c.scrollTop = c.scrollHeight;
+            });
+        }
+
+        async function sendMsg() {
+            const t = document.getElementById('msg-text').value;
+            if(!t || !activeChatId) return;
+            const id = [auth.currentUser.uid, activeChatId].sort().join("_");
+            await db.collection("chats").doc(id).collection("messages").add({
+                text: t,
+                sender: auth.currentUser.uid,
+                time: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            document.getElementById('msg-text').value = "";
+        }
+    </script>
+</body>
+</html>
