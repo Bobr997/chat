@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cloud Elite Final</title>
+    <title>Cloud Elite PRO V3</title>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     <style>
         :root { --main: #24A1DE; --bg: #f0f2f5; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, sans-serif; }
@@ -15,74 +14,99 @@
         .screen { position: absolute; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; z-index: 1; }
         .hidden { display: none !important; }
         .header { background: var(--main); color: white; padding: 10px 16px; display: flex; align-items: center; gap: 12px; height: 60px; }
-        .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #ddd; border: 1px solid #fff; }
+        .avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; border: 1px solid #fff; }
         #messages { flex: 1; overflow-y: auto; padding: 15px; background: #e6eef3; display: flex; flex-direction: column; gap: 8px; }
         .msg { padding: 10px 14px; border-radius: 18px; max-width: 80%; font-size: 16px; position: relative; box-shadow: 0 1px 2px #0002; }
         .my { align-self: flex-end; background: #efffde; border-bottom-right-radius: 2px; }
         .other { align-self: flex-start; background: white; border-bottom-left-radius: 2px; }
-        .reply-in-msg { font-size: 12px; background: rgba(0,0,0,0.05); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 5px; border-radius: 4px; display: block; }
-        #reply-bar { background: #f9f9f9; padding: 10px; border-left: 5px solid var(--main); display: flex; justify-content: space-between; border-top: 1px solid #eee; }
-        .input-bar { padding: 10px; display: flex; gap: 12px; background: white; align-items: center; padding-bottom: 30px; }
-        input { border: none; padding: 12px; background: #f0f0f5; border-radius: 20px; flex: 1; font-size: 16px; outline: none; }
-        #action-sheet { position: fixed; bottom: 0; width: 100%; background: white; padding: 20px; transform: translateY(100%); transition: 0.3s; z-index: 1000; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 25px #0004; }
+        
+        /* Стиль для ответа внутри сообщения */
+        .reply-box { font-size: 12px; background: rgba(0,0,0,0.05); border-left: 3px solid var(--main); padding: 4px 8px; margin-bottom: 4px; border-radius: 4px; color: #555; }
+        
+        /* Полоска ответа над инпутом */
+        #reply-preview { background: #f9f9f9; padding: 8px 15px; border-left: 5px solid var(--main); display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #eee; }
+
+        .react-tag { position: absolute; bottom: -10px; right: 5px; background: white; border-radius: 10px; padding: 2px 6px; font-size: 12px; border: 1px solid #ddd; z-index: 2; }
+        .input-bar { padding: 12px; display: flex; gap: 12px; background: white; align-items: center; border-top: 1px solid #eee; padding-bottom: 30px; }
+        .input-bar input { border: none; padding: 12px; background: #f0f0f5; border-radius: 20px; flex: 1; font-size: 16px; outline: none; }
+        .btn-ui { background: var(--main); color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 12px; font-size: 16px; }
+        #action-sheet { position: fixed; bottom: 0; width: 100%; background: white; padding: 25px; transform: translateY(100%); transition: 0.3s; z-index: 1000; border-radius: 25px 25px 0 0; box-shadow: 0 -5px 25px #0004; }
         #action-sheet.open { transform: translateY(0); }
-        .sheet-btn { text-align: center; padding: 15px; font-weight: bold; cursor: pointer; border-bottom: 1px solid #eee; }
+        .action-item { padding: 15px; text-align: center; font-weight: bold; border-bottom: 1px solid #eee; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="scr-list" class="screen">
+<div id="scr-auth" class="screen" style="justify-content: center; padding: 30px;">
+    <h1 style="text-align:center; color:var(--main); margin-bottom:25px;">Cloud Elite</h1>
+    <input type="email" id="auth-email" placeholder="Email" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none;">
+    <input type="password" id="auth-pass" placeholder="Пароль" style="margin-top:10px; padding:12px; background:#f0f0f0; border-radius:10px; border:none;">
+    <button onclick="handleAuth()" class="btn-ui">Войти / Регистрация</button>
+</div>
+
+<div id="scr-list" class="screen hidden">
     <div class="header">
-        <div onclick="toggleSets()" style="cursor:pointer; font-size:22px">☰</div>
-        <b style="flex:1; text-align:center">Облако</b>
+        <div onclick="toggleSets()" style="font-size:24px; cursor:pointer">☰</div>
+        <b style="flex:1; text-align:center">Мессенджер</b>
     </div>
-    <div id="user-list" style="overflow-y:auto; flex:1"></div>
+    <div style="padding:10px; background:#fff; border-bottom:1px solid #eee;">
+        <input type="text" id="user-search" placeholder="Поиск ника..." oninput="filterUsers()" style="padding:10px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+    </div>
+    <div id="chat-list-container" style="overflow-y:auto; flex:1"></div>
 </div>
 
 <div id="scr-chat" class="screen hidden">
     <div class="header">
-        <div onclick="backToList()" style="cursor:pointer; font-size:28px">‹</div>
-        <img id="chat-head-ava" class="avatar">
+        <div onclick="backToList()" style="cursor:pointer; font-size:26px">‹</div>
+        <img id="head-avatar" class="avatar" src="">
         <div style="flex:1">
-            <b id="chat-head-name">...</b><br>
-            <small id="chat-head-status" style="font-size:11px"></small>
+            <b id="head-name">...</b><br>
+            <small id="head-status" style="font-size:11px; opacity:0.9">загрузка...</small>
         </div>
     </div>
     <div id="messages"></div>
-    <div id="reply-bar" class="hidden">
-        <div id="reply-txt" style="font-size:13px; color:#555"></div>
-        <div onclick="cancelReply()">✕</div>
+
+    <div id="reply-preview" class="hidden">
+        <div style="font-size:12px; color:#666; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+            Ответ на: <span id="reply-text-val"></span>
+        </div>
+        <div onclick="cancelReply()" style="cursor:pointer; font-weight:bold; padding:0 10px">✕</div>
     </div>
+
     <div class="input-bar">
-        <label style="cursor:pointer; font-size:26px">📸<input type="file" id="f-msg" hidden onchange="uploadPhoto(this, 'msg')"></label>
+        <label style="cursor:pointer; font-size:28px">📸<input type="file" id="file-photo" hidden onchange="uploadImg(this)"></label>
         <input type="text" id="msg-input" placeholder="Сообщение...">
-        <button onclick="sendMsg()" style="border:none; background:none; font-size:26px">🚀</button>
+        <button onclick="sendMsg()" style="border:none; background:none; font-size:28px">🚀</button>
     </div>
 </div>
 
 <div id="scr-sets" class="screen hidden" style="padding:25px">
-    <div onclick="toggleSets()" style="font-size:30px; cursor:pointer">✕</div>
-    <div style="text-align:center; margin-bottom:20px">
+    <div onclick="toggleSets()" style="font-size:30px; margin-bottom:20px; cursor:pointer">✕</div>
+    <div style="text-align:center; margin-bottom:25px">
         <label>
-            <img id="my-ava" class="avatar" style="width:100px; height:100px">
-            <input type="file" id="f-ava" hidden onchange="uploadPhoto(this, 'ava')">
-            <p style="color:var(--main); font-weight:bold; margin-top:10px">Изменить фото</p>
+            <img id="my-preview" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" class="avatar" style="width:90px; height:90px; border: 2px solid var(--main)">
+            <input type="file" hidden onchange="uploadAvatar(this)">
+            <p style="color:var(--main); margin-top:8px; font-weight:bold; font-size:14px">Сменить фото профиля</p>
         </label>
     </div>
-    <p>Имя:</p>
-    <input type="text" id="set-name" style="width:100%; padding:12px; margin-bottom:15px; border:1px solid #ddd; border-radius:10px">
-    <p>Юзернейм (@):</p>
-    <input type="text" id="set-user" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:10px">
-    <button onclick="saveProfile()" id="btn-save" style="width:100%; padding:15px; background:var(--main); color:white; border:none; border-radius:12px; font-weight:bold; margin-top:20px">Сохранить</button>
+    <p style="font-size:12px; color:gray">Ваше имя:</p>
+    <input type="text" id="set-name" placeholder="Имя" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%; margin-bottom:15px">
+    <p style="font-size:12px; color:gray">Юзернейм (Уникальный):</p>
+    <input type="text" id="set-user" placeholder="Ваш ник" style="padding:12px; background:#f0f0f0; border-radius:10px; border:none; width:100%">
+    <button onclick="saveProfile()" id="btn-save" class="btn-ui">Сохранить данные</button>
+    <button onclick="auth.signOut()" class="btn-ui" style="background:#ff3b30">Выйти</button>
 </div>
 
 <div id="action-sheet">
     <div style="display:flex; justify-content:space-around; margin-bottom:15px; font-size:32px">
-        <span onclick="addReact('👍')">👍</span><span onclick="addReact('❤️')">❤️</span><span onclick="addReact('😂')">😂</span><span onclick="addReact('🔥')">🔥</span>
+        <span onclick="addReact('👍')" style="cursor:pointer">👍</span>
+        <span onclick="addReact('❤️')" style="cursor:pointer">❤️</span>
+        <span onclick="addReact('😂')" style="cursor:pointer">😂</span>
+        <span onclick="addReact('🔥')" style="cursor:pointer">🔥</span>
     </div>
-    <div class="sheet-btn" style="color:var(--main)" onclick="initReply()">Ответить</div>
-    <div class="sheet-btn" style="color:red" onclick="deleteMsg()">Удалить</div>
-    <div class="sheet-btn" style="border:none" onclick="closeActions()">Отмена</div>
+    <div onclick="initReply()" class="action-item" style="color:var(--main)">Ответить</div>
+    <div onclick="deleteMsg()" class="action-item" style="color:red">Удалить это сообщение</div>
+    <div onclick="closeActions()" class="action-item" style="color:gray; border:none">Отмена</div>
 </div>
 
 <script>
@@ -92,139 +116,160 @@
         projectId: "mymessenger-2b9d0",
         storageBucket: "mymessenger-2b9d0.firebasestorage.app",
         messagingSenderId: "1023277743941",
-        appId: "1:1023277743941:web:ae94eaed1c12b30795082c",
-        databaseURL: "https://mymessenger-2b9d0-default-rtdb.firebaseio.com"
+        appId: "1:1023277743941:web:ae94eaed1c12b30795082c"
     };
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth(), db = firebase.firestore(), rtdb = firebase.database();
+    const auth = firebase.auth(), db = firebase.firestore();
     const IMG_KEY = "0922d3e28da55ca6daee14cbe5073ae6";
 
-    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, replyData = null;
+    let activeChatId = null, unsubMsgs = null, unsubStatus = null, selectedDoc = null, allUsers = [], replyText = null;
 
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
         if(user) {
-            // Живой статус
-            const statusRef = rtdb.ref('.info/connected');
-            statusRef.on('value', snap => {
-                if(snap.val() === false) return;
-                const myStatus = rtdb.ref('/status/' + user.uid);
-                myStatus.onDisconnect().set({online: false}).then(() => myStatus.set({online: true}));
-                db.collection("users").doc(user.uid).set({online: true}, {merge: true});
-            });
-            loadUserList();
-            loadMyProfile();
+            const doc = await db.collection("users").doc(user.uid).get();
+            const d = doc.data() || {};
+            document.getElementById('set-name').value = d.displayName || "";
+            document.getElementById('set-user').value = d.username || "";
+            if(d.avatar) document.getElementById('my-preview').src = d.avatar;
+            
+            document.getElementById('scr-list').classList.remove('hidden');
+            document.getElementById('scr-auth').classList.add('hidden');
+            loadUsers();
+            db.collection("users").doc(user.uid).set({online:true}, {merge:true});
+        } else {
+            document.getElementById('scr-auth').classList.remove('hidden');
+            document.getElementById('scr-list').classList.add('hidden');
         }
     });
 
-    async function uploadPhoto(el, mode) {
-        if(!el.files[0]) return;
-        const fd = new FormData(); fd.append("image", el.files[0]);
-        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
-        const json = await res.json();
-        if(json.success) {
-            const url = json.data.url;
-            if(mode === 'ava') {
-                await db.collection("users").doc(auth.currentUser.uid).update({avatar: url});
-                document.getElementById('my-ava').src = url;
-                alert("Аватар обновлен!");
-            } else {
-                sendMsg(url);
-            }
-        }
+    async function handleAuth() {
+        const e = document.getElementById('auth-email').value, p = document.getElementById('auth-pass').value;
+        if(e && p) auth.signInWithEmailAndPassword(e, p).catch(() => auth.createUserWithEmailAndPassword(e, p));
     }
 
-    async function saveProfile() {
-        const u = document.getElementById('set-user').value.trim().toLowerCase();
-        const n = document.getElementById('set-name').value.trim();
-        if(!u) return alert("Введите ник!");
-        
-        const snap = await db.collection("users").where("username", "==", u).get();
-        let taken = false;
-        snap.forEach(d => { if(d.id !== auth.currentUser.uid) taken = true; });
-        if(taken) return alert("Этот ник уже занят!");
-
-        await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge:true});
-        alert("Сохранено!"); toggleSets(); loadUserList();
-    }
-
-    async function loadUserList() {
-        const snap = await db.collection("users").get();
-        const box = document.getElementById('user-list'); box.innerHTML = "";
-        snap.forEach(doc => {
-            if(doc.id !== auth.currentUser.uid) {
-                const u = doc.data();
-                const d = document.createElement('div');
-                d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
-                d.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar">
-                               <div style="margin-left:12px"><b>${u.displayName || u.username}</b><br>
-                               <small style="color:${u.online?'green':'gray'}">${u.online?'в сети':'был недавно'}</small></div>`;
-                d.onclick = () => openChat(doc.id, u);
-                box.appendChild(d);
-            }
+    async function loadUsers() {
+        db.collection("users").onSnapshot(snap => {
+            allUsers = [];
+            snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) allUsers.push({id: doc.id, ...doc.data()}); });
+            renderUsers(allUsers);
         });
     }
 
-    function openChat(uid, u) {
-        activeChatId = [auth.currentUser.uid, uid].sort().join("_");
-        document.getElementById('chat-head-name').innerText = u.displayName || u.username;
-        document.getElementById('chat-head-ava').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    function renderUsers(list) {
+        const box = document.getElementById('chat-list-container'); box.innerHTML = "";
+        list.forEach(u => {
+            const d = document.createElement('div');
+            d.style = "display:flex; align-items:center; padding:15px; border-bottom:1px solid #eee; cursor:pointer";
+            d.innerHTML = `<img src="${u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" class="avatar">
+                           <div style="margin-left:15px"><b>${u.displayName || u.username}</b><br>
+                           <small style="color:${u.online?'#2ecc71':'gray'}">${u.online?'в сети':'не в сети'}</small></div>`;
+            d.onclick = () => openChat(u.id, u);
+            box.appendChild(d);
+        });
+    }
+
+    function openChat(id, u) {
+        activeChatId = id;
+        document.getElementById('head-name').innerText = u.displayName || u.username;
+        document.getElementById('head-avatar').src = u.avatar || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
         document.getElementById('scr-chat').classList.remove('hidden');
         
+        // Живое отслеживание статуса друга
         if(unsubStatus) unsubStatus();
-        unsubStatus = db.collection("users").doc(uid).onSnapshot(d => {
-            const data = d.data();
-            document.getElementById('chat-head-status').innerText = data.online ? "в сети" : "был недавно";
-            document.getElementById('chat-head-status').style.color = data.online ? "#34eb46" : "white";
+        unsubStatus = db.collection("users").doc(id).onSnapshot(doc => {
+            const data = doc.data();
+            document.getElementById('head-status').innerText = data.online ? "в сети" : "был(а) недавно";
+            document.getElementById('head-status').style.color = data.online ? "#fff" : "rgba(255,255,255,0.7)";
         });
 
+        loadMsgs();
+    }
+
+    function loadMsgs() {
+        const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
         if(unsubMsgs) unsubMsgs();
-        unsubMsgs = db.collection("chats").doc(activeChatId).collection("messages").orderBy("time","asc").onSnapshot(s => {
+        unsubMsgs = db.collection("chats").doc(cId).collection("messages").orderBy("time","asc").onSnapshot(s => {
             const box = document.getElementById('messages'); box.innerHTML = "";
-            s.forEach(doc => {
-                const m = doc.data();
-                const c = document.createElement('div');
+            s.forEach(d => {
+                const m = d.data(), c = document.createElement('div');
                 c.className = "msg " + (m.sender === auth.currentUser.uid ? "my" : "other");
-                let h = "";
-                if(m.reply) h += `<div class="reply-in-msg"><b>Ответ:</b><br>${m.reply}</div>`;
-                h += m.type === 'img' ? `<img src="${m.url}" style="max-width:100%; border-radius:10px">` : m.text;
-                c.innerHTML = h;
-                c.onclick = () => { selectedDoc = doc; document.getElementById('action-sheet').classList.add('open'); };
+                
+                let content = "";
+                if(m.replyTo) content += `<div class="reply-box"><b>Ответ:</b> ${m.replyTo}</div>`;
+                if(m.type === 'img') content += `<img src="${m.url}" style="max-width:100%; border-radius:12px; display:block">`;
+                else content += m.text;
+                if(m.re) content += `<div class="react-tag">${m.re}</div>`;
+                
+                c.innerHTML = content;
+                c.onclick = () => { selectedDoc = d; document.getElementById('action-sheet').classList.add('open'); };
                 box.appendChild(c);
             });
             box.scrollTop = box.scrollHeight;
         });
     }
 
-    async function sendMsg(imgUrl = null) {
-        const text = document.getElementById('msg-input').value;
-        if(!text && !imgUrl) return;
-        const p = { 
-            sender: auth.currentUser.uid, 
-            time: firebase.firestore.FieldValue.serverTimestamp(),
-            type: imgUrl ? 'img' : 'text'
-        };
-        if(imgUrl) p.url = imgUrl; else p.text = text;
-        if(replyData) { p.reply = replyData; cancelReply(); }
-        await db.collection("chats").doc(activeChatId).collection("messages").add(p);
-        document.getElementById('msg-input').value = "";
-    }
-
     function initReply() {
-        const d = selectedDoc.data();
-        replyData = d.type === 'img' ? "Фото" : d.text;
-        document.getElementById('reply-txt').innerText = replyData;
-        document.getElementById('reply-bar').classList.remove('hidden');
+        const data = selectedDoc.data();
+        replyText = data.type === 'img' ? "Фотография" : data.text;
+        document.getElementById('reply-text-val').innerText = replyText;
+        document.getElementById('reply-preview').classList.remove('hidden');
         closeActions();
     }
 
-    function cancelReply() { replyData = null; document.getElementById('reply-bar').classList.add('hidden'); }
-    function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
+    function cancelReply() { replyText = null; document.getElementById('reply-preview').classList.add('hidden'); }
+
+    async function sendMsg() {
+        const t = document.getElementById('msg-input').value; if(!t && !replyText) return;
+        const cId = [auth.currentUser.uid, activeChatId].sort().join("_");
+        const payload = {
+            sender: auth.currentUser.uid, 
+            text: t, 
+            time: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if(replyText) { payload.replyTo = replyText; cancelReply(); }
+        await db.collection("chats").doc(cId).collection("messages").add(payload);
+        document.getElementById('msg-input').value = "";
+    }
+
+    async function uploadAvatar(el) {
+        if(!el.files[0]) return;
+        const fd = new FormData(); fd.append("image", el.files[0]);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMG_KEY}`, { method: "POST", body: fd });
+        const json = await res.json();
+        if(json.success) {
+            await db.collection("users").doc(auth.currentUser.uid).update({avatar: json.data.url});
+            document.getElementById('my-preview').src = json.data.url;
+            alert("Аватар изменен!");
+        }
+    }
+
+    async function saveProfile() {
+        const u = document.getElementById('set-user').value.trim().toLowerCase();
+        const n = document.getElementById('set-name').value.trim();
+        const btn = document.getElementById('btn-save');
+        if(!u) return alert("Введите ник!");
+        btn.disabled = true;
+
+        const snap = await db.collection("users").where("username", "==", u).get();
+        let taken = false;
+        snap.forEach(doc => { if(doc.id !== auth.currentUser.uid) taken = true; });
+
+        if(taken) { alert("Этот ник уже занят!"); btn.disabled = false; return; }
+
+        await db.collection("users").doc(auth.currentUser.uid).set({username: u, displayName: n}, {merge:true});
+        alert("Сохранено!"); btn.disabled = false; toggleSets();
+    }
+
+    function addReact(r) { selectedDoc.ref.update({re: r}); closeActions(); }
+    function deleteMsg() { if(confirm("Удалить?")) selectedDoc.ref.delete(); closeActions(); }
     function closeActions() { document.getElementById('action-sheet').classList.remove('open'); }
-    function backToList() { document.getElementById('scr-chat').classList.add('hidden'); }
-    async function loadMyProfile() {
-        const d = await db.collection("users").doc(auth.currentUser.uid).get();
-        if(d.exists) document.getElementById('my-ava').src = d.data().avatar || "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+    function backToList() { document.getElementById('scr-chat').classList.add('hidden'); if(unsubMsgs) unsubMsgs(); }
+    function toggleSets() { document.getElementById('scr-sets').classList.toggle('hidden'); }
+    function filterUsers() {
+        const q = document.getElementById('user-search').value.toLowerCase();
+        renderUsers(allUsers.filter(u => (u.displayName||'').toLowerCase().includes(q) || (u.username||'').toLowerCase().includes(q)));
     }
 </script>
 </body>
-</html>
+    </html>
+    
